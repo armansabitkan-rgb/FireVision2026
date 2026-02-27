@@ -1,0 +1,8 @@
+numpy==1.24.3
+opencv-python==4.7.0.72
+torch==2.0.1
+ultralytics==8.0.124
+fastapi==0.95.2
+uvicorn==0.22.0
+tensorflowjs==4.10.0
+paho-mqtt==1.6.1
