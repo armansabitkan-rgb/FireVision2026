@@ -337,8 +337,10 @@
 
   <script>
     // ===================== КОНФИГУРАЦИЯ =====================
+    // Текстура Земли лежит в папке assets
     const EARTH_TEX = 'assets/earth.jpg';
-    const MODEL_PATH = "./my_model/";
+    // Модель ИИ лежит в папке models
+    const MODEL_PATH = "./models/";
     
     let currentZoom = 4.6; 
     let focusEnabled = false;
@@ -357,7 +359,6 @@
 
     // ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
     
-    // Получение текущего времени для отчетов
     function getNowString() {
       const now = new Date();
       return now.toLocaleString('en-GB', { 
@@ -370,7 +371,6 @@
       });
     }
 
-    // Нормализация имен классов от ИИ
     function normalizeClassName(name){
       const n = (name || "").toLowerCase();
       if (n.includes("wildfire") || (n.includes("fire") && !n.includes("false"))) return "Wildfire";
@@ -378,7 +378,6 @@
       return "No Fire";
     }
 
-    // Расчет уровня серьезности
     function severityFrom(className, prob){
       if (normalizeClassName(className) !== "Wildfire") return "NONE";
       if (prob >= 0.85) return "CRITICAL";
@@ -386,7 +385,6 @@
       return "LOW";
     }
 
-    // Форматирование GPS координат
     function formatLatLonShort(lat, lon){
       const ns = lat >= 0 ? 'N' : 'S';
       const ew = lon >= 0 ? 'E' : 'W';
@@ -470,7 +468,6 @@
         for(let x=0; x<dw; x++){
           const i = (y*dw + x) * 4;
           const r = data[i], g = data[i+1], b = data[i+2];
-          // Heuristic: Detecting fire-like pixels (Orange/Red/Yellow spectrum)
           if(r > 165 && g > 65 && r > g && g > b) {
             count++; 
             sx += x; 
@@ -486,7 +483,7 @@
     }
 
     function calcDirection(dx, dy){
-      const angle = Math.atan2(-dy, dx) * 57.29; // conversion to degrees
+      const angle = Math.atan2(-dy, dx) * 57.29; 
       const dirs = [
         {n:"East",min:-22,max:22},
         {n:"North-East",min:22,max:67},
@@ -505,8 +502,6 @@
     // ===================== THREE.JS WORLD SETUP =====================
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
-    
-    // ПРИЛЕТ: Начинаем издалека (Z=25)
     camera.position.set(0, 0, 25);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -517,12 +512,10 @@
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
     
-    // ГЛАВНОЕ СОЛНЦЕ (Свет)
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
     sunLight.position.set(10, 5, 10); 
     scene.add(sunLight);
 
-    // ЗВЕЗДЫ
     const starGeo = new THREE.BufferGeometry();
     const starCount = 3500;
     const starPos = new Float32Array(starCount * 3);
@@ -530,7 +523,6 @@
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
     scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.7 })));
 
-    // ЗЕМЛЯ
     const earth = new THREE.Mesh(
       new THREE.SphereGeometry(1, 64, 64), 
       new THREE.MeshPhongMaterial({ color: 0xcccccc })
@@ -542,13 +534,11 @@
       earth.material.needsUpdate = true; 
     });
     
-    // Атмосфера
     earth.add(new THREE.Mesh(
       new THREE.SphereGeometry(1.03, 64, 64), 
       new THREE.MeshBasicMaterial({ transparent:true, opacity:0.08, color: 0x88ccff })
     ));
 
-    // ПРОЦЕДУРНАЯ ЛУНА С КРАТЕРАМИ
     function createMoonTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 512; canvas.height = 512;
@@ -577,7 +567,6 @@
     );
     scene.add(moon);
 
-    // СИЯЮЩЕЕ СОЛНЦЕ (ВИЗУАЛЬНОЕ)
     const sunC = document.createElement('canvas'); sunC.width = 512; sunC.height = 512;
     const sctx = sunC.getContext('2d');
     const sg = sctx.createRadialGradient(256,256,0,256,256,256);
@@ -588,7 +577,6 @@
     sunSprite.scale.set(45, 45, 1);
     scene.add(sunSprite);
 
-    // МОДЕЛЬ СПУТНИКА
     const sat = new THREE.Group(); 
     sat.scale.set(0.18, 0.18, 0.18);
     const satBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.7 }));
@@ -596,7 +584,6 @@
     sat.add(satBody); sat.add(satPanels);
     scene.add(sat);
 
-    // РАДАРНЫЙ МАРКЕР (ТОЧКА НА ЗЕМЛЕ)
     const markC = document.createElement('canvas'); markC.width = 64; markC.height = 64;
     const markCtx = markC.getContext('2d');
     const rg = markCtx.createRadialGradient(32,32,0,32,32,32);
@@ -625,14 +612,13 @@
         fireMarker.visible = true; 
         focusEnabled = true;
         
-        // Математика координат (Исправлено)
         const lat = Math.asin(n.y) * 57.29;
         const lon = Math.atan2(n.x, n.z) * 57.29;
         
         const coordsText = formatLatLonShort(lat, lon);
         coordsEl.textContent = coordsText;
         window.selectedAOI = coordsText;
-        currentZoom = 3.2; // При клике подлетаем ближе
+        currentZoom = 3.2; 
       }
     });
 
@@ -661,18 +647,15 @@
       const f2 = imgInput2.files[0];
       if(!f1) return alert("Baseline image t0 required for scanning.");
       
-      // Загружаем превью
       imgPreview1.src = URL.createObjectURL(f1);
       await new Promise(r => imgPreview1.onload = r);
       
-      // Прогноз нейросети
       const res = await model.predict(imgPreview1);
       const isFire = normalizeClassName(res[0].className) === "Wildfire";
       const conf = Math.round(res[0].probability * 100);
       const severity = severityFrom(res[0].className, res[0].probability);
       const coordsStr = coordsEl.textContent;
 
-      // Обновляем UI
       alertLabel.className = `alertLabel alert${isFire ? 'Danger' : 'Safe'}`;
       alertLabel.textContent = isFire ? "DANGER" : "SAFE";
       mainLabel.textContent = isFire ? "Wildfire Detected" : "Scanning Clear";
@@ -683,7 +666,6 @@
                      makeKV("Severity", severity) +
                      makeKV("Target AOI", coordsStr);
 
-      // Если загружено 2 снимка — считаем динамику
       if(f2 && isFire) {
         imgPreview2.src = URL.createObjectURL(f2);
         await new Promise(r => imgPreview2.onload = r);
@@ -698,7 +680,7 @@
           const dy = s1.centroid.y - s0.centroid.y;
           const distPx = Math.sqrt(dx*dx + dy*dy);
           
-          const speed = ((distPx * mpp) / dt * 60) / 1000; // km/h
+          const speed = ((distPx * mpp) / dt * 60) / 1000; 
           const dir = calcDirection(dx, dy);
           const area1 = s1.count * Math.pow(mpp, 2);
           
@@ -717,7 +699,6 @@
 
       metricsGrid.innerHTML = gridHtml;
 
-      // Если пожар — отправляем в Telegram и сохраняем в историю
       if(isFire) {
         const payload = { coords: coordsStr, conf, severity, extra: dynamicData };
         broadcastToTelegram(payload);
@@ -731,23 +712,19 @@
       requestAnimationFrame(animate); 
       t += 0.006;
       
-      // Вращение объектов
       earth.rotation.y += 0.0012;
       moon.position.set(Math.cos(t*0.5)*1.6, 0.2, Math.sin(t*0.5)*1.6);
       moon.rotation.y += 0.01;
 
-      // Полет спутника
       sat.position.set(Math.cos(t)*1.4, Math.sin(t*0.8)*0.3, Math.sin(t)*1.4);
       sat.lookAt(0,0,0);
 
-      // Логика камеры (Прилет + Зум + Фокус)
       if(focusEnabled && fireMarker.visible) {
         fireMarker.getWorldPosition(focusTarget);
         const targetPos = focusTarget.clone().normalize().multiplyScalar(currentZoom);
         camera.position.lerp(targetPos, 0.06);
         camera.lookAt(focusTarget);
       } else {
-        // Плавный подлет в начале и свободное парение
         const idlePos = new THREE.Vector3(0, 0, currentZoom);
         camera.position.lerp(idlePos, 0.03); 
         camera.lookAt(0,0,0);
