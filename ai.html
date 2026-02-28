@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision — AI Intelligence Lab</title>
+  <style>
+    :root {
+      --bg: #060712;
+      --surface: rgba(25, 25, 30, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #eaeaea;
+      --muted: rgba(255, 255, 255, 0.5);
+      --accent: #4facfe;
+      --fire: #ff7a2a;
+      --safe: #4ade80;
+    }
+
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow: hidden; display: flex;
+    }
+
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(79, 172, 254, 0.15), transparent 40%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      opacity: 0.4;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px; background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(16px);
+      border-right: 1px solid var(--border); padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 30px; z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: 0.05em; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: #ff7a2a; box-shadow: 0 0 15px #ff7a2a; }
+    .nav-links { display: flex; flex-direction: column; gap: 8px; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted); padding: 12px 16px; border-radius: 12px;
+      font-weight: 600; font-size: 14px; transition: all 0.2s; border: 1px solid transparent;
+    }
+    .nav-links a:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .nav-links a.active { background: rgba(79, 172, 254, 0.1); color: var(--accent); border: 1px solid rgba(79, 172, 254, 0.3); }
+
+    /* MAIN CONTENT */
+    .main { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .header { padding: 30px 40px 20px; border-bottom: 1px solid var(--border); background: rgba(6, 7, 18, 0.9); backdrop-filter: blur(10px); }
+    .header h1 { margin: 0 0 8px 0; font-size: 28px; }
+    .header p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    /* LAB LAYOUT */
+    .lab-container {
+      flex: 1; padding: 30px 40px; overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 340px; gap: 30px;
+    }
+    .lab-container::-webkit-scrollbar { width: 8px; }
+    .lab-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .glass-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; backdrop-filter: blur(8px);
+    }
+    .glass-panel h3 { margin: 0 0 16px 0; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+
+    /* SCANNER AREA */
+    .scanner-wrap { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 4/3; }
+    #sourceImg { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.6; }
+    #scanCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    
+    .scan-line {
+      position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: var(--accent); box-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent);
+      display: none; z-index: 5;
+    }
+
+    .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+    
+    input[type="file"] {
+      width: 100%; box-sizing: border-box; padding: 12px 10px; border-radius: 10px;
+      border: 1px dashed rgba(255,255,255,.2); background: rgba(0,0,0,.15); color: rgba(255,255,255,.8);
+      cursor: pointer; font-size: 12px; font-family: inherit;
+    }
+
+    .btn-primary { 
+      padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3); 
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+
+    /* ========================================= */
+    /* NEW SATELLITE ANIMATION MODULE            */
+    /* ========================================= */
+    .uplink-container {
+      display: flex; align-items: center; gap: 15px;
+      padding: 14px; border-radius: 12px;
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      margin-bottom: 24px; transition: border-color 0.3s;
+    }
+    .uplink-icon svg { stroke: var(--muted); transition: 0.3s; width: 28px; height: 28px; }
+    .uplink-data { flex: 1; }
+    .uplink-title { font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .uplink-calc { font-family: monospace; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+    .uplink-fire-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: transparent; transition: 0.3s;
+    }
+
+    /* Active (Scanning) State */
+    .uplink-container.scanning { border-color: rgba(79, 172, 254, 0.5); box-shadow: inset 0 0 20px rgba(79,172,254,0.1); }
+    .uplink-container.scanning .uplink-icon svg { stroke: var(--accent); animation: satWobble 0.3s infinite alternate; }
+    .uplink-container.scanning .uplink-calc { color: var(--accent); animation: textFlicker 0.1s infinite; }
+    .uplink-container.scanning .uplink-fire-dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: fastPulse 0.4s infinite alternate; }
+
+    /* Found Fire State */
+    .uplink-container.found { border-color: rgba(255, 122, 42, 0.4); background: rgba(255, 122, 42, 0.05); }
+    .uplink-container.found .uplink-icon svg { stroke: var(--fire); }
+    .uplink-container.found .uplink-calc { color: var(--fire); font-weight: bold; }
+    .uplink-container.found .uplink-fire-dot { background: var(--fire); box-shadow: 0 0 15px var(--fire); animation: ping 1.5s infinite; }
+
+    /* Clear/Safe State */
+    .uplink-container.clear { border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.05); }
+    .uplink-container.clear .uplink-icon svg { stroke: var(--safe); }
+    .uplink-container.clear .uplink-calc { color: var(--safe); }
+    .uplink-container.clear .uplink-fire-dot { background: var(--safe); box-shadow: 0 0 15px var(--safe); }
+
+    @keyframes satWobble { 0% { transform: translateY(-2px) rotate(-5deg); } 100% { transform: translateY(2px) rotate(5deg); } }
+    @keyframes textFlicker { 0% { opacity: 0.8; } 100% { opacity: 1; } }
+    @keyframes fastPulse { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
+    @keyframes ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3.5); opacity: 0; } }
+
+    /* DYNAMIC METRICS / BARS */
+    .metric-group { margin-bottom: 16px; }
+    .metric-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 600; }
+    .metric-val { font-family: monospace; font-size: 14px; }
+    
+    .bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; border-radius: 4px; transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    
+    .fill-fire { background: var(--fire); box-shadow: 0 0 10px var(--fire); }
+    .fill-false { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+    .fill-accent { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .fill-none { background: var(--muted); }
+
+    .terminal {
+      margin-top: 20px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px;
+      font-family: monospace; font-size: 12px; color: #a5d6ff; height: 140px; overflow-y: auto; border: 1px inset rgba(255,255,255,0.05);
+    }
+    .terminal p { margin: 4px 0; }
+    .term-sys { color: #888; }
+    .term-warn { color: #fbbf24; }
+    .term-ok { color: #4ade80; }
+    .term-err { color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="brand"><div class="dot"></div> FIREVISION</div>
+    <div class="nav-links">
+      <a href="index.html">00. Home</a>
+      <a href="dashboard.html">01. Mission Control</a>
+      <a href="alerts.html">02. Alerts Timeline</a>
+      <a href="ai.html" class="active">03. AI Intelligence</a>
+      <a href="scenario.html">04. Scenario Lab</a>
+      <a href="replay.html">05. Incident Replay</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <h1>AI Intelligence Lab</h1>
+      <p>Real-time Model Verification (Powered by your Teachable Machine Model)</p>
+    </div>
+
+    <div class="lab-container">
+      
+      <div class="glass-panel">
+        <h3>Vision Feed</h3>
+        <div class="scanner-wrap">
+          <img id="sourceImg" src="assets/alert-anomaly.jpg" alt="Source Image" crossorigin="anonymous">
+          <canvas id="scanCanvas"></canvas>
+          <div class="scan-line" id="scanLine"></div>
+        </div>
+        
+        <div class="controls">
+          <input type="file" id="imgUpload" accept="image/*">
+          <button class="btn-primary" id="runScanBtn" disabled>Loading AI Model...</button>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <h3>Analysis Core</h3>
+
+        <div class="uplink-container" id="satUplink">
+          <div class="uplink-icon">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12A9 9 0 0 0 3 12M21 5.28A16 16 0 0 0 3 5.28M12 20v-8M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
+            </svg>
+          </div>
+          <div class="uplink-data">
+            <div class="uplink-title">SAT-LINK: <span id="uplinkStatus" style="color:var(--muted)">STANDBY</span></div>
+            <div class="uplink-calc" id="uplinkCalc">AWAITING TARGET...</div>
+          </div>
+          <div class="uplink-fire-dot"></div>
+        </div>
+
+        <div id="dynamicBars">
+          <div style="color: var(--muted); font-size: 13px; text-align: center; margin-top: 10px;">Waiting for model to load...</div>
+        </div>
+
+        <div class="terminal" id="terminal">
+          <p class="term-sys">> System initialized.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    const sourceImg = document.getElementById('sourceImg');
+    const scanCanvas = document.getElementById('scanCanvas');
+    const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+    const scanLine = document.getElementById('scanLine');
+    const runScanBtn = document.getElementById('runScanBtn');
+    const imgUpload = document.getElementById('imgUpload');
+    const terminal = document.getElementById('terminal');
+    const dynamicBars = document.getElementById('dynamicBars');
+
+    // Элементы анимации спутника
+    const satUplink = document.getElementById('satUplink');
+    const uplinkStatus = document.getElementById('uplinkStatus');
+    const uplinkCalc = document.getElementById('uplinkCalc');
+    let calcInterval; // Таймер для бегущих цифр
+
+    // Настройки модели
+    const MODEL_URL = "./my_model/";
+    let tmModel = null;
+
+    function logTerm(msg, type="term-sys") {
+      const p = document.createElement('p');
+      p.className = type;
+      p.textContent = `> ${msg}`;
+      terminal.appendChild(p);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // Загрузка твоей локальной модели
+    async function loadRealModel() {
+      try {
+        logTerm("Loading local AI model from my_model/ ...", "term-warn");
+        const modelURL = MODEL_URL + "model.json";
+        const metadataURL = MODEL_URL + "metadata.json";
+        tmModel = await tmImage.load(modelURL, metadataURL);
+        
+        logTerm(`Model loaded successfully! Classes found: ${tmModel.getTotalClasses()}`, "term-ok");
+        runScanBtn.textContent = "Run Deep Scan";
+        runScanBtn.disabled = false;
+        
+        dynamicBars.innerHTML = `<div style="color: var(--safe); font-size: 13px; margin-top: 10px;">Model ready. Click "Run Deep Scan".</div>`;
+      } catch (e) {
+        logTerm("Error: Could not load model. Check paths to metadata.json/model.json.", "term-err");
+        runScanBtn.textContent = "Model Error";
+      }
+    }
+    window.addEventListener('load', loadRealModel);
+
+    // Загрузка картинки
+    imgUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      sourceImg.src = URL.createObjectURL(file);
+      logTerm(`Loaded new image: ${file.name}`);
+      resetUI();
+    });
+
+    function resetUI() {
+      ctx.clearRect(0, 0, scanCanvas.width, scanCanvas.height);
+      scanLine.style.display = 'none';
+      dynamicBars.innerHTML = `<div style="color: var(--muted); font-size: 13px; margin-top: 10px;">Ready for analysis.</div>`;
+      
+      // Сброс анимации спутника
+      clearInterval(calcInterval);
+      satUplink.className = 'uplink-container';
+      uplinkStatus.textContent = 'STANDBY';
+      uplinkStatus.style.color = 'var(--muted)';
+      uplinkCalc.textContent = 'AWAITING TARGET...';
+    }
+
+    function resizeCanvas() {
+      scanCanvas.width = sourceImg.clientWidth;
+      scanCanvas.height = sourceImg.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    sourceImg.addEventListener('load', resizeCanvas);
+
+    // Запуск сканирования и нейросети
+    runScanBtn.addEventListener('click', async () => {
+      if (!sourceImg.complete || sourceImg.naturalHeight === 0 || !tmModel) return;
+      resizeCanvas();
+      ctx.clearRect(0, 0, scanCanvas.width, scanCanvas.height);
+      
+      logTerm("Initiating image processing...", "term-warn");
+      runScanBtn.disabled = true;
+      scanLine.style.display = 'block';
+
+      // --- 1. ВКЛЮЧАЕМ АНИМАЦИЮ СПУТНИКА ---
+      satUplink.className = 'uplink-container scanning';
+      uplinkStatus.textContent = 'CALCULATING';
+      uplinkStatus.style.color = 'var(--accent)';
+      
+      // Запускаем быструю смену цифр (имитация вычислений)
+      calcInterval = setInterval(() => {
+        const hex1 = Math.floor(Math.random()*16777215).toString(16).toUpperCase().padStart(6, '0');
+        const hex2 = Math.floor(Math.random()*9999).toString().padStart(4, '0');
+        uplinkCalc.textContent = `PROC: ${hex1} | SIG: ${hex2}`;
+      }, 60);
+
+      // --- 2. ПОЛУЧАЕМ ДАННЫЕ ИЗ МОДЕЛИ ---
+      const predictions = await tmModel.predict(sourceImg);
+      predictions.sort((a,b) => b.probability - a.probability);
+      
+      // --- 3. АНИМАЦИЯ ЛАЗЕРА ---
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = scanCanvas.width; tempCanvas.height = scanCanvas.height;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(sourceImg, 0, 0, tempCanvas.width, tempCanvas.height);
+      const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
+
+      let scanY = 0;
+      const step = 6;
+      const gridSize = 16;
+
+      function scanStep() {
+        if (scanY > scanCanvas.height) {
+          scanLine.style.display = 'none';
+          runScanBtn.disabled = false;
+          // Отрисовываем результаты, когда лазер дойдет до конца
+          drawDynamicBars(predictions);
+          return;
+        }
+
+        scanLine.style.top = `${scanY}px`;
+        ctx.strokeStyle = 'rgba(79, 172, 254, 0.1)';
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x < scanCanvas.width; x += gridSize) {
+          const i = (scanY * scanCanvas.width + x) * 4;
+          const r = imgData[i]; const g = imgData[i+1]; const b = imgData[i+2];
+
+          const isHot = (r > 160 && g > 60 && r > g * 1.2 && b < 120) || (r > 200 && g > 150 && b < 100);
+          ctx.strokeRect(x, scanY, gridSize, gridSize);
+          if (isHot) {
+            ctx.fillStyle = 'rgba(255, 122, 42, 0.4)';
+            ctx.fillRect(x, scanY, gridSize, gridSize);
+          }
+        }
+        scanY += step;
+        requestAnimationFrame(scanStep);
+      }
+      scanStep();
+    });
+
+    // Функция отрисовки шкал и финала анимации спутника
+    function drawDynamicBars(predictions) {
+      logTerm("Analysis complete. Displaying real model data.", "term-ok");
+      dynamicBars.innerHTML = ''; 
+      
+      // --- ФИНАЛ АНИМАЦИИ СПУТНИКА ---
+      clearInterval(calcInterval);
+      const topMatch = predictions[0];
+      const isFireDetected = topMatch.probability > 0.5 && (topMatch.className.toLowerCase().includes('fire') || topMatch.className.toLowerCase().includes('wildfire') || topMatch.className.toLowerCase().includes('огонь'));
+
+      if (isFireDetected) {
+        satUplink.className = 'uplink-container found';
+        uplinkStatus.textContent = 'ANOMALY DETECTED';
+        uplinkStatus.style.color = 'var(--fire)';
+        uplinkCalc.textContent = `LAT:${(Math.random()*90).toFixed(4)} LON:${(Math.random()*180).toFixed(4)}`;
+      } else {
+        satUplink.className = 'uplink-container clear';
+        uplinkStatus.textContent = 'TERRAIN CLEAR';
+        uplinkStatus.style.color = 'var(--safe)';
+        uplinkCalc.textContent = `NO FIRE SIGNATURE`;
+      }
+
+      // --- ОТРИСОВКА ШКАЛ ---
+      predictions.forEach((p) => {
+        const prob = p.probability * 100;
+        const className = p.className;
+        
+        let barColorClass = "fill-none";
+        let textColor = "var(--muted)";
+        
+        const n = className.toLowerCase();
+        if (n.includes("fire") || n.includes("wildfire") || n.includes("огонь")) {
+          barColorClass = "fill-fire"; textColor = "var(--fire)";
+        } else if (n.includes("false") || n.includes("cloud") || n.includes("safe") || n.includes("нет")) {
+          barColorClass = "fill-false"; textColor = "var(--safe)";
+        } else {
+          barColorClass = "fill-accent"; textColor = "var(--accent)";
+        }
+
+        const html = `
+          <div class="metric-group">
+            <div class="metric-header">
+              <span>${className}</span>
+              <span class="metric-val" style="color: ${textColor}">${prob.toFixed(1)}%</span>
+            </div>
+            <div class="bar-bg">
+              <div class="bar-fill ${barColorClass}" style="width: 0%" data-target-width="${prob}%"></div>
+            </div>
+          </div>
+        `;
+        dynamicBars.insertAdjacentHTML('beforeend', html);
+      });
+
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(bar => {
+          bar.style.width = bar.getAttribute('data-target-width');
+        });
+      }, 100);
+
+      logTerm(`Top Match: ${topMatch.className} (${(topMatch.probability * 100).toFixed(1)}%)`, topMatch.probability > 0.6 ? "term-err" : "term-ok");
+    }
+
+    setTimeout(resizeCanvas, 100);
+  </script>
+</body>
+</html>

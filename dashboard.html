@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision Mission Control (Dashboard)</title>
+  <style>
+    /* ================= ОСНОВНЫЕ СТИЛИ ================= */
+    html, body { 
+      margin: 0; 
+      height: 100%; 
+      overflow: hidden; 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background-color: #000;
+      color: #fff;
+    }
+    
+    #app { 
+      position: fixed; 
+      inset: 0; 
+      z-index: 1; 
+    }
+
+    /* ================= SIDEBAR (МЕНЮ) ================= */
+    .sidebar {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      bottom: 0;
+      width: 260px;
+      background: rgba(10, 10, 15, 0.7);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 242, 254, 0.15);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      z-index: 20;
+      box-sizing: border-box;
+    }
+    
+    .brand {
+      display: flex; 
+      align-items: center; 
+      gap: 12px;
+      font-weight: 900; 
+      font-size: 20px; 
+      letter-spacing: 0.1em; 
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .brand .dot {
+      width: 14px; 
+      height: 14px; 
+      border-radius: 50%;
+      background: #ff3300; 
+      box-shadow: 0 0 15px #ff3300;
+    }
+    
+    .nav-links { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+    }
+    
+    .nav-links a {
+      text-decoration: none; 
+      color: rgba(255, 255, 255, 0.4);
+      padding: 14px 18px; 
+      border-radius: 12px;
+      font-weight: 600; 
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-links a:hover {
+      background: rgba(0, 242, 254, 0.05); 
+      color: #fff;
+    }
+    
+    .nav-links a.active {
+      background: rgba(0, 242, 254, 0.1);
+      color: #00f2fe;
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+    }
+
+    /* ================= ZOOM HUD CONTROLS ================= */
+    .zoom-controls {
+      position: fixed; 
+      left: 285px; 
+      bottom: 40px; 
+      z-index: 25;
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px;
+    }
+    
+    .zoom-btn {
+      width: 48px; 
+      height: 48px; 
+      border-radius: 14px; 
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(15, 15, 20, 0.6); 
+      backdrop-filter: blur(12px); 
+      color: #fff;
+      font-size: 26px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      cursor: pointer; 
+      transition: all 0.2s; 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      user-select: none;
+    }
+    
+    .zoom-btn:hover { 
+      background: rgba(0, 242, 254, 0.15); 
+      border-color: #00f2fe; 
+    }
+
+    /* ================= ПАНЕЛЬ ДАННЫХ (СПРАВА) ================= */
+    #ui {
+      position: fixed;
+      top: 25px; 
+      right: 25px;
+      width: 450px; 
+      max-width: 90vw;
+      max-height: calc(100vh - 50px);
+      overflow-y: auto;
+      background: rgba(15, 18, 25, 0.85);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 25px;
+      z-index: 20;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    
+    #ui::-webkit-scrollbar { width: 6px; }
+    #ui::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.2); border-radius: 10px; }
+
+    h1 { font-size: 22px; margin: 0 0 15px 0; font-weight: 800; }
+    
+    .step { 
+      background: rgba(255, 255, 255, 0.03); 
+      border-radius: 16px; 
+      padding: 18px; 
+      margin: 15px 0;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .step b { 
+      display: block; 
+      margin-bottom: 10px; 
+      font-size: 15px; 
+      color: #00f2fe; 
+      text-transform: uppercase;
+    }
+    
+    button.run-btn {
+      width: 100%; 
+      padding: 15px; 
+      border-radius: 14px; 
+      border: none;
+      background: linear-gradient(135deg, #0072ff 0%, #00f2fe 100%);
+      color: #fff; 
+      font-weight: 800; 
+      cursor: pointer; 
+      font-size: 14px;
+      box-shadow: 0 10px 25px rgba(0, 114, 255, 0.3);
+      transition: all 0.3s;
+    }
+    
+    button.run-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+    .hint { opacity: 0.6; font-size: 12px; line-height: 1.6; }
+    .mono { font-family: 'Courier New', Courier, monospace; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px; color: #00f2fe; font-weight: bold; }
+    
+    input[type="file"] {
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 12px;
+      border: 1px dashed rgba(255,255,255,0.2); 
+      background: rgba(0,0,0,0.2); 
+      color: #fff;
+      cursor: pointer; 
+      font-size: 12px;
+      margin: 10px 0;
+    }
+    
+    .smallRow { display: flex; gap: 15px; margin-top: 15px; }
+    .field { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .field label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; }
+    
+    input[type="number"] {
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1); 
+      background: rgba(0,0,0,0.3);
+      color: #fff; 
+      outline: none;
+    }
+
+    .statusBadge {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 10px;
+      padding: 8px 16px; 
+      border-radius: 20px;
+      background: rgba(0,0,0,0.4); 
+      font-size: 12px;
+    }
+    
+    .dot-status { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+    .dot-status.ok { background: #00ff88; box-shadow: 0 0 12px #00ff88; }
+    .dot-status.wait { background: #ffaa00; box-shadow: 0 0 12px #ffaa00; }
+
+    .resultCard {
+      margin-top: 20px; 
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 20px; 
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .alertLabel {
+      padding: 8px 18px; 
+      border-radius: 12px; 
+      font-weight: 900; 
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .alertSafe { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+    .alertDanger { background: rgba(255, 51, 0, 0.15); color: #ff3300; border: 1px solid rgba(255, 51, 0, 0.3); }
+    .alertNA { background: rgba(255,255,255,0.05); color: #888; }
+
+    .bigClass { margin-top: 15px; font-size: 24px; font-weight: 800; color: #fff; }
+    
+    .grid { margin-top: 18px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .kv {
+      padding: 12px 15px; 
+      border-radius: 12px;
+      background: rgba(0,0,0,0.3); 
+      border: 1px solid rgba(255,255,255,0.03);
+      display: flex; 
+      flex-direction: column; 
+      gap: 5px;
+    }
+    .k { font-size: 10px; color: rgba(0, 242, 254, 0.7); text-transform: uppercase; font-weight: 800; }
+    .v { font-size: 13px; color: #fff; font-weight: 500; }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div class="sidebar">
+    <a href="index.html" class="brand">
+      <div class="dot"></div> FIREVISION
+    </a>
+    <div class="nav-links">
+      <a href="index.html">00. Home</a>
+      <a href="dashboard.html" class="active">01. Mission Control</a>
+      <a href="alerts.html">02. Alerts Timeline</a>
+      <a href="ai.html">03. AI Intelligence</a>
+      <a href="scenario.html">04. Scenario Lab</a>
+      <a href="payload.html">06. Payload Specs</a>
+    </div>
+  </div>
+
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="btnZoomIn">+</button>
+    <button class="zoom-btn" id="btnZoomOut">−</button>
+  </div>
+
+  <div id="ui">
+    <h1>🛰 Mission Command Center</h1>
+    
+    <div class="step">
+      <b>Target Designation</b>
+      <div class="hint">Кликните на глобус для захвата цели (AOI).</div>
+      <div class="hint" style="margin-top: 10px;">
+        GPS: <span class="mono" id="coords">GPS_LINK_WAITING...</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <b>Satellite Payload</b>
+      <div class="hint">Image t0 (Baseline):</div>
+      <input id="imgInput1" type="file" accept="image/*" />
+      <div class="hint">Image t1 (Dynamic Analysis - Optional):</div>
+      <input id="imgInput2" type="file" accept="image/*" />
+
+      <div class="smallRow">
+        <div class="field">
+          <label>Time Delta (min)</label>
+          <input id="dtMinutes" type="number" value="15" />
+        </div>
+        <div class="field">
+          <label>GSD (meters/px)</label>
+          <input id="mpp" type="number" value="15" />
+        </div>
+      </div>
+
+      <div style="margin-top:20px; display:flex; align-items:center; justify-content:space-between;">
+        <span class="statusBadge" id="modelStatus">
+          <span class="dot-status wait"></span>AI ENGINE: BOOTING
+        </span>
+      </div>
+      
+      <button class="run-btn" id="run" style="margin-top:15px;">INITIATE SCAN & BROADCAST</button>
+
+      <div class="resultCard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:800; font-size:11px; color:rgba(255,255,255,0.4);">LIVE ANALYSIS REPORT</span>
+          <div class="alertLabel alertNA" id="alertLabel">STANDBY</div>
+        </div>
+        <div class="bigClass" id="mainLabel">Awaiting Data...</div>
+        <div class="grid" id="metricsGrid"></div>
+      </div>
+    </div>
+    
+    <div class="hint" style="text-align:center; margin-top:10px;">
+      Broadcast Hub: <a href="https://t.me/firevision_alerts" target="_blank" style="color:#00f2fe; text-decoration:none;">@firevision_alerts</a>
+    </div>
+  </div>
+
+  <img id="imgPreview1" style="display:none" />
+  <img id="imgPreview2" style="display:none" />
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    // ===================== КОНФИГУРАЦИЯ =====================
+    const EARTH_TEX = 'assets/earth.jpg';
+    const MODEL_PATH = "./my_model/";
+    
+    let currentZoom = 4.6; 
+    let focusEnabled = false;
+    const focusTarget = new THREE.Vector3();
+    const lookAtTarget = new THREE.Vector3();
+    const camTargetPos = new THREE.Vector3();
+
+    const coordsEl = document.getElementById('coords');
+    const alertLabel = document.getElementById('alertLabel');
+    const mainLabel = document.getElementById('mainLabel');
+    const metricsGrid = document.getElementById('metricsGrid');
+    const imgInput1 = document.getElementById('imgInput1');
+    const imgInput2 = document.getElementById('imgInput2');
+    const imgPreview1 = document.getElementById('imgPreview1');
+    const imgPreview2 = document.getElementById('imgPreview2');
+
+    // ===================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====================
+    
+    // Получение текущего времени для отчетов
+    function getNowString() {
+      const now = new Date();
+      return now.toLocaleString('en-GB', { 
+        day:'2-digit', 
+        month:'short', 
+        year:'numeric', 
+        hour:'2-digit', 
+        minute:'2-digit', 
+        second:'2-digit' 
+      });
+    }
+
+    // Нормализация имен классов от ИИ
+    function normalizeClassName(name){
+      const n = (name || "").toLowerCase();
+      if (n.includes("wildfire") || (n.includes("fire") && !n.includes("false"))) return "Wildfire";
+      if (n.includes("false")) return "False Alarm";
+      return "No Fire";
+    }
+
+    // Расчет уровня серьезности
+    function severityFrom(className, prob){
+      if (normalizeClassName(className) !== "Wildfire") return "NONE";
+      if (prob >= 0.85) return "CRITICAL";
+      if (prob >= 0.65) return "ELEVATED";
+      return "LOW";
+    }
+
+    // Форматирование GPS координат
+    function formatLatLonShort(lat, lon){
+      const ns = lat >= 0 ? 'N' : 'S';
+      const ew = lon >= 0 ? 'E' : 'W';
+      return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lon).toFixed(4)}°${ew}`;
+    }
+
+    function makeKV(k, v) { 
+      return `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`; 
+    }
+
+    // ===================== ТЕЛЕГРАМ БОТ =====================
+    async function broadcastToTelegram(data) {
+      const token = '8674807819:AAEhEVzKbNhOKogwEbjre7SptzGfl8stPNk';
+      const channel = '@firevision_alerts'; 
+
+      let extraInfo = "";
+      if(data.extra) {
+        extraInfo = `\n📏 <b>Area:</b> ${data.extra.area1Km2.toFixed(3)} km² (~${data.extra.area1Ha.toFixed(1)} ha)\n` +
+                    `💨 <b>Spread:</b> ${data.extra.speedKmH.toFixed(2)} km/h (${data.extra.direction})`;
+      }
+
+      const text = `🚨 <b>FIRE DETECTION ALERT</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━\n` +
+                   `📅 <b>Detected at:</b> ${getNowString()}\n` +
+                   `🛰 <b>Sensor:</b> FireVision-Sat 1\n` +
+                   `📍 <b>Location:</b> <code>${data.coords}</code>\n` +
+                   `🔥 <b>AI Confidence:</b> ${data.conf}%\n` +
+                   `⚠️ <b>Severity:</b> ${data.severity}${extraInfo}\n` +
+                   `━━━━━━━━━━━━━━━━━━\n` +
+                   `<i>Immediate ground verification recommended. System armed.</i>`;
+
+      const api = `https://api.telegram.org/bot${token}/sendMessage`;
+
+      try {
+        await fetch(api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: channel, text: text, parse_mode: 'HTML' })
+        });
+      } catch (err) { 
+        console.error("Telegram Broadcast Failed", err); 
+      }
+    }
+
+    // ===================== СОХРАНЕНИЕ В ИСТОРИЮ (ALERTS PAGE) =====================
+    function saveToLocalHistory(data) {
+      const newAlert = {
+        date: getNowString(),
+        title: "Live Detection: Sector " + (Math.floor(Math.random() * 89) + 10),
+        coords: data.coords,
+        conf: data.conf + "%",
+        severity: data.severity,
+        area: data.extra ? data.extra.area1Km2.toFixed(3) + " km²" : "N/A"
+      };
+
+      const existing = JSON.parse(localStorage.getItem('fire_alerts') || '[]');
+      existing.push(newAlert);
+      localStorage.setItem('fire_alerts', JSON.stringify(existing));
+    }
+
+    // ===================== COMPUTER VISION (PIXEL ANALYSIS) =====================
+    const workCanvas = document.createElement('canvas');
+    const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+
+    function computeFireStats(imgEl){
+      const maxW = 360;
+      const w = imgEl.naturalWidth || imgEl.width;
+      const h = imgEl.naturalHeight || imgEl.height;
+      const scale = Math.min(1, maxW / Math.max(w, h));
+      const dw = Math.round(w * scale);
+      const dh = Math.round(h * scale);
+      
+      workCanvas.width = dw; 
+      workCanvas.height = dh;
+      workCtx.drawImage(imgEl, 0, 0, dw, dh);
+      const data = workCtx.getImageData(0,0,dw,dh).data;
+      
+      let count = 0; 
+      let sx = 0, sy = 0;
+      for(let y=0; y<dh; y++){
+        for(let x=0; x<dw; x++){
+          const i = (y*dw + x) * 4;
+          const r = data[i], g = data[i+1], b = data[i+2];
+          // Heuristic: Detecting fire-like pixels (Orange/Red/Yellow spectrum)
+          if(r > 165 && g > 65 && r > g && g > b) {
+            count++; 
+            sx += x; 
+            sy += y;
+          }
+        }
+      }
+      return { 
+        count, 
+        centroid: count > 0 ? { x: sx/count, y: sy/count } : null, 
+        scale 
+      };
+    }
+
+    function calcDirection(dx, dy){
+      const angle = Math.atan2(-dy, dx) * 57.29; // conversion to degrees
+      const dirs = [
+        {n:"East",min:-22,max:22},
+        {n:"North-East",min:22,max:67},
+        {n:"North",min:67,max:112},
+        {n:"North-West",min:112,max:157},
+        {n:"West",min:157,max:180},
+        {n:"West",min:-180,max:-157},
+        {n:"South-West",min:-157,max:-112},
+        {n:"South",min:-112,max:-67},
+        {n:"South-East",min:-67,max:-22}
+      ];
+      for(const d of dirs) if(angle >= d.min && angle < d.max) return d.n;
+      return "N/A";
+    }
+
+    // ===================== THREE.JS WORLD SETUP =====================
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    // ПРИЛЕТ: Начинаем издалека (Z=25)
+    camera.position.set(0, 0, 25);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    
+    // ГЛАВНОЕ СОЛНЦЕ (Свет)
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunLight.position.set(10, 5, 10); 
+    scene.add(sunLight);
+
+    // ЗВЕЗДЫ
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 3500;
+    const starPos = new Float32Array(starCount * 3);
+    for(let i=0; i<starCount*3; i++) starPos[i] = (Math.random() - 0.5) * 250;
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.7 })));
+
+    // ЗЕМЛЯ
+    const earth = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 64, 64), 
+      new THREE.MeshPhongMaterial({ color: 0xcccccc })
+    );
+    scene.add(earth);
+    new THREE.TextureLoader().load(EARTH_TEX, (t) => { 
+      t.colorSpace = THREE.SRGBColorSpace; 
+      earth.material.map = t; 
+      earth.material.needsUpdate = true; 
+    });
+    
+    // Атмосфера
+    earth.add(new THREE.Mesh(
+      new THREE.SphereGeometry(1.03, 64, 64), 
+      new THREE.MeshBasicMaterial({ transparent:true, opacity:0.08, color: 0x88ccff })
+    ));
+
+    // ПРОЦЕДУРНАЯ ЛУНА С КРАТЕРАМИ
+    function createMoonTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#888';
+      ctx.fillRect(0,0,512,512);
+      for(let i=0; i<40000; i++){
+        ctx.fillStyle = Math.random()>0.5?'#999':'#777';
+        ctx.fillRect(Math.random()*512, Math.random()*512, 1, 1);
+      }
+      for(let i=0; i<50; i++){
+        const r = Math.random()*15;
+        const x = Math.random()*512;
+        const y = Math.random()*512;
+        const g = ctx.createRadialGradient(x-r*0.3, y-r*0.3, 0, x, y, r);
+        g.addColorStop(0, 'rgba(0,0,0,0.4)');
+        g.addColorStop(1, 'rgba(255,255,255,0.1)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
+      }
+      return new THREE.CanvasTexture(canvas);
+    }
+    const moon = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 48, 48), 
+      new THREE.MeshStandardMaterial({ map: createMoonTexture(), roughness: 0.9 })
+    );
+    scene.add(moon);
+
+    // СИЯЮЩЕЕ СОЛНЦЕ (ВИЗУАЛЬНОЕ)
+    const sunC = document.createElement('canvas'); sunC.width = 512; sunC.height = 512;
+    const sctx = sunC.getContext('2d');
+    const sg = sctx.createRadialGradient(256,256,0,256,256,256);
+    sg.addColorStop(0,'#ffffff'); sg.addColorStop(0.2,'#fff2cc'); sg.addColorStop(0.5,'rgba(255,180,0,0.2)'); sg.addColorStop(1,'transparent');
+    sctx.fillStyle = sg; sctx.fillRect(0,0,512,512);
+    const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sunC), blending: THREE.AdditiveBlending }));
+    sunSprite.position.set(60, 40, 50); 
+    sunSprite.scale.set(45, 45, 1);
+    scene.add(sunSprite);
+
+    // МОДЕЛЬ СПУТНИКА
+    const sat = new THREE.Group(); 
+    sat.scale.set(0.18, 0.18, 0.18);
+    const satBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.7 }));
+    const satPanels = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.05, 0.6), new THREE.MeshStandardMaterial({ color: 0x0055ff, metalness: 0.5 }));
+    sat.add(satBody); sat.add(satPanels);
+    scene.add(sat);
+
+    // РАДАРНЫЙ МАРКЕР (ТОЧКА НА ЗЕМЛЕ)
+    const markC = document.createElement('canvas'); markC.width = 64; markC.height = 64;
+    const markCtx = markC.getContext('2d');
+    const rg = markCtx.createRadialGradient(32,32,0,32,32,32);
+    rg.addColorStop(0, 'rgba(255,0,0,1)'); rg.addColorStop(1, 'rgba(255,0,0,0)');
+    markCtx.fillStyle = rg; markCtx.fillRect(0,0,64,64);
+    const fireMarker = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(markC), depthTest: false }));
+    fireMarker.visible = false; 
+    fireMarker.scale.set(0.12, 0.12, 1);
+    earth.add(fireMarker);
+
+    // ===================== ИНТЕРАКТИВНОСТЬ =====================
+    const ray = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('#ui') || e.target.closest('.sidebar') || e.target.closest('.zoom-controls')) return;
+      const r = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+      mouse.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+      
+      ray.setFromCamera(mouse, camera);
+      const hits = ray.intersectObject(earth);
+      if(hits.length) {
+        const n = earth.worldToLocal(hits[0].point.clone()).normalize();
+        fireMarker.position.copy(n.multiplyScalar(1.03));
+        fireMarker.visible = true; 
+        focusEnabled = true;
+        
+        // Математика координат (Исправлено)
+        const lat = Math.asin(n.y) * 57.29;
+        const lon = Math.atan2(n.x, n.z) * 57.29;
+        
+        const coordsText = formatLatLonShort(lat, lon);
+        coordsEl.textContent = coordsText;
+        window.selectedAOI = coordsText;
+        currentZoom = 3.2; // При клике подлетаем ближе
+      }
+    });
+
+    document.getElementById('btnZoomIn').onclick = () => { 
+      currentZoom = Math.max(MIN_ZOOM, currentZoom - 1); 
+      focusEnabled = false; 
+    };
+    document.getElementById('btnZoomOut').onclick = () => { 
+      currentZoom = Math.min(MAX_ZOOM, currentZoom + 1); 
+      focusEnabled = false; 
+    };
+
+    // ===================== ЗАПУСК AI И АНАЛИЗА =====================
+    let model = null;
+    async function initAI() {
+      try {
+        model = await tmImage.load(MODEL_PATH + "model.json", MODEL_PATH + "metadata.json");
+        document.getElementById('modelStatus').innerHTML = '<span class="dot-status ok"></span>AI ENGINE: ONLINE';
+      } catch (e) { 
+        document.getElementById('modelStatus').innerHTML = '<span class="dot-status" style="background:red;"></span>AI ERROR'; 
+      }
+    }
+
+    document.getElementById('run').onclick = async () => {
+      const f1 = imgInput1.files[0];
+      const f2 = imgInput2.files[0];
+      if(!f1) return alert("Baseline image t0 required for scanning.");
+      
+      // Загружаем превью
+      imgPreview1.src = URL.createObjectURL(f1);
+      await new Promise(r => imgPreview1.onload = r);
+      
+      // Прогноз нейросети
+      const res = await model.predict(imgPreview1);
+      const isFire = normalizeClassName(res[0].className) === "Wildfire";
+      const conf = Math.round(res[0].probability * 100);
+      const severity = severityFrom(res[0].className, res[0].probability);
+      const coordsStr = coordsEl.textContent;
+
+      // Обновляем UI
+      alertLabel.className = `alertLabel alert${isFire ? 'Danger' : 'Safe'}`;
+      alertLabel.textContent = isFire ? "DANGER" : "SAFE";
+      mainLabel.textContent = isFire ? "Wildfire Detected" : "Scanning Clear";
+
+      let dynamicData = null;
+      let gridHtml = makeKV("Detected at", getNowString()) +
+                     makeKV("AI Confidence", conf + "%") +
+                     makeKV("Severity", severity) +
+                     makeKV("Target AOI", coordsStr);
+
+      // Если загружено 2 снимка — считаем динамику
+      if(f2 && isFire) {
+        imgPreview2.src = URL.createObjectURL(f2);
+        await new Promise(r => imgPreview2.onload = r);
+        
+        const s0 = computeFireStats(imgPreview1);
+        const s1 = computeFireStats(imgPreview2);
+        const dt = parseFloat(document.getElementById('dtMinutes').value || 15);
+        const mpp = parseFloat(document.getElementById('mpp').value || 15);
+        
+        if(s0.centroid && s1.centroid) {
+          const dx = s1.centroid.x - s0.centroid.x;
+          const dy = s1.centroid.y - s0.centroid.y;
+          const distPx = Math.sqrt(dx*dx + dy*dy);
+          
+          const speed = ((distPx * mpp) / dt * 60) / 1000; // km/h
+          const dir = calcDirection(dx, dy);
+          const area1 = s1.count * Math.pow(mpp, 2);
+          
+          dynamicData = { 
+            area1Km2: area1/1000000, 
+            area1Ha: area1/10000, 
+            speedKmH: speed, 
+            direction: dir 
+          };
+          
+          gridHtml += makeKV("Current Area", dynamicData.area1Km2.toFixed(3) + " km²") +
+                      makeKV("Spread Speed", speed.toFixed(2) + " km/h") +
+                      makeKV("Wind Direction", dir);
+        }
+      }
+
+      metricsGrid.innerHTML = gridHtml;
+
+      // Если пожар — отправляем в Telegram и сохраняем в историю
+      if(isFire) {
+        const payload = { coords: coordsStr, conf, severity, extra: dynamicData };
+        broadcastToTelegram(payload);
+        saveToLocalHistory(payload);
+      }
+    };
+
+    // ===================== ГЛАВНЫЙ ЦИКЛ АНИМАЦИИ =====================
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate); 
+      t += 0.006;
+      
+      // Вращение объектов
+      earth.rotation.y += 0.0012;
+      moon.position.set(Math.cos(t*0.5)*1.6, 0.2, Math.sin(t*0.5)*1.6);
+      moon.rotation.y += 0.01;
+
+      // Полет спутника
+      sat.position.set(Math.cos(t)*1.4, Math.sin(t*0.8)*0.3, Math.sin(t)*1.4);
+      sat.lookAt(0,0,0);
+
+      // Логика камеры (Прилет + Зум + Фокус)
+      if(focusEnabled && fireMarker.visible) {
+        fireMarker.getWorldPosition(focusTarget);
+        const targetPos = focusTarget.clone().normalize().multiplyScalar(currentZoom);
+        camera.position.lerp(targetPos, 0.06);
+        camera.lookAt(focusTarget);
+      } else {
+        // Плавный подлет в начале и свободное парение
+        const idlePos = new THREE.Vector3(0, 0, currentZoom);
+        camera.position.lerp(idlePos, 0.03); 
+        camera.lookAt(0,0,0);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    initAI(); 
+    animate();
+
+    window.onresize = () => { 
+      camera.aspect = window.innerWidth / window.innerHeight; 
+      camera.updateProjectionMatrix(); 
+      renderer.setSize(window.innerWidth, window.innerHeight); 
+    };
+  </script>
+</body>
+</html>

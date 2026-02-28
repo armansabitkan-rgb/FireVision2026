@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision — Alerts Timeline</title>
+  <style>
+    :root {
+      --bg: #020308;
+      --accent: #00f2fe;
+      --fire: #ff3300;
+      --glass: rgba(15, 20, 30, 0.8);
+    }
+
+    body {
+      margin: 0; background: var(--bg); color: #fff;
+      font-family: 'Segoe UI', sans-serif; overflow-x: hidden;
+    }
+
+    /* Sidebar - такая же как в Dashboard */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
+      background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 242, 254, 0.15); padding: 30px 20px;
+      z-index: 100; box-sizing: border-box;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; color: #fff; margin-bottom: 35px; text-decoration: none; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--fire); box-shadow: 0 0 10px var(--fire); }
+    .nav-links a { display: block; text-decoration: none; color: rgba(255,255,255,0.4); padding: 14px 18px; border-radius: 12px; font-size: 14px; margin-bottom: 8px; transition: 0.3s; }
+    .nav-links a.active { background: rgba(0, 242, 254, 0.1); color: var(--accent); border: 1px solid rgba(0, 242, 254, 0.3); }
+
+    /* Main Content */
+    .main { margin-left: 260px; padding: 50px; max-width: 1000px; }
+    h1 { font-size: 32px; letter-spacing: 1px; margin-bottom: 10px; }
+    .subtitle { color: var(--accent); font-family: monospace; margin-bottom: 40px; opacity: 0.8; }
+
+    /* Timeline Structure */
+    .timeline { position: relative; padding-left: 40px; }
+    .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--accent), transparent); }
+
+    .alert-card {
+      background: var(--glass); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 20px; padding: 25px; margin-bottom: 30px; position: relative;
+      transition: 0.4s; animation: slideIn 0.5s ease-out both;
+    }
+    .alert-card::before {
+      content: ''; position: absolute; left: -49px; top: 30px;
+      width: 16px; height: 16px; border-radius: 50%; background: var(--bg);
+      border: 3px solid var(--accent); box-shadow: 0 0 10px var(--accent);
+    }
+    .alert-card:hover { border-color: var(--accent); transform: translateX(10px); background: rgba(0, 242, 254, 0.05); }
+
+    .alert-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+    .alert-date { font-family: monospace; color: var(--accent); font-size: 14px; font-weight: bold; }
+    .severity { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .sev-critical { background: rgba(255, 51, 0, 0.2); color: #ff3300; border: 1px solid #ff3300; }
+    .sev-elevated { background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid #ffaa00; }
+
+    .alert-title { font-size: 18px; font-weight: 700; margin: 0 0 10px 0; }
+    .alert-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; font-size: 13px; color: rgba(255,255,255,0.6); }
+    .info-item b { display: block; color: #fff; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; opacity: 0.4; }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Кнопка очистки для тестов */
+    .clear-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 10px; margin-top: 20px; }
+    .clear-btn:hover { color: #fff; border-color: #fff; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <a href="index.html" class="brand"><div class="dot"></div> FIREVISION</a>
+    <div class="nav-links">
+      <a href="index.html">00. Home</a>
+      <a href="dashboard.html">01. Mission Control</a>
+      <a href="alerts.html" class="active">02. Alerts Timeline</a>
+      <a href="ai.html">03. AI Intelligence</a>
+      <a href="scenario.html">04. Scenario Lab</a>
+      <a href="payload.html">06. Payload Specs</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <h1>Incident Timeline</h1>
+    <div class="subtitle">LOGGING ACTIVE SATELLITE ANOMALIES // FEB 2026</div>
+
+    <div class="timeline" id="timelineContainer">
+      </div>
+
+    <button class="clear-btn" onclick="clearHistory()">Clear Dynamic History</button>
+  </div>
+
+  <script>
+    // 1. ПРЕДУСТАНОВЛЕННЫЕ ИНЦИДЕНТЫ (для реализма)
+    const staticAlerts = [
+      {
+        date: "27 FEB 2026 | 09:15:42",
+        title: "Siberian Taiga Zone B-4",
+        coords: "61.2341°N, 92.4123°E",
+        conf: "94%",
+        severity: "CRITICAL",
+        area: "1.240 km²"
+      },
+      {
+        date: "26 FEB 2026 | 21:04:11",
+        title: "Amazon Basin Sector 9",
+        coords: "3.1245°S, 60.1234°W",
+        conf: "82%",
+        severity: "ELEVATED",
+        area: "0.850 km²"
+      }
+    ];
+
+    function createCard(data, isNew = false) {
+      const sevClass = data.severity === 'CRITICAL' ? 'sev-critical' : 'sev-elevated';
+      return `
+        <div class="alert-card" style="${isNew ? 'border-color: var(--accent); box-shadow: 0 0 20px rgba(0,242,254,0.1);' : ''}">
+          <div class="alert-header">
+            <div class="alert-date">${isNew ? 'NEW ALERT // ' : ''}${data.date}</div>
+            <div class="severity ${sevClass}">${data.severity}</div>
+          </div>
+          <h3 class="alert-title">${data.title}</h3>
+          <div class="alert-info">
+            <div class="info-item"><b>Coordinates</b>${data.coords}</div>
+            <div class="info-item"><b>AI Confidence</b>${data.conf}</div>
+            <div class="info-item"><b>Detected Area</b>${data.area}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTimeline() {
+      const container = document.getElementById('timelineContainer');
+      let html = '';
+
+      // Сначала отрисовываем новые инциденты из localStorage (те, что вы кликнули в Dashboard)
+      const dynamicAlerts = JSON.parse(localStorage.getItem('fire_alerts') || '[]');
+      
+      dynamicAlerts.reverse().forEach(alert => {
+        html += createCard(alert, true);
+      });
+
+      // Затем отрисовываем статические «реалистичные» данные
+      staticAlerts.forEach(alert => {
+        html += createCard(alert);
+      });
+
+      container.innerHTML = html;
+    }
+
+    function clearHistory() {
+      if(confirm('Clear all dynamic reports?')) {
+        localStorage.removeItem('fire_alerts');
+        location.reload();
+      }
+    }
+
+    window.onload = renderTimeline;
+  </script>
+</body>
+</html>

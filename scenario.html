@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision — Scenario Lab</title>
+  <style>
+    :root {
+      --bg: #060712;
+      --surface: rgba(25, 25, 30, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #eaeaea;
+      --muted: rgba(255, 255, 255, 0.5);
+      --accent: #4facfe;
+      --fire: #ff7a2a;
+      --danger: #f87171;
+      --safe: #4ade80;
+    }
+
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow: hidden; display: flex;
+    }
+
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1;
+      background-image: 
+        radial-gradient(circle at 80% 80%, rgba(255, 122, 42, 0.1), transparent 40%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      opacity: 0.3;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px; background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(16px);
+      border-right: 1px solid var(--border); padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 30px; z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: 0.05em; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--fire); box-shadow: 0 0 15px var(--fire); }
+    .nav-links { display: flex; flex-direction: column; gap: 8px; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted); padding: 12px 16px; border-radius: 12px;
+      font-weight: 600; font-size: 14px; transition: all 0.2s; border: 1px solid transparent;
+    }
+    .nav-links a:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .nav-links a.active { background: rgba(255, 122, 42, 0.1); color: var(--fire); border: 1px solid rgba(255, 122, 42, 0.3); }
+
+    /* MAIN CONTENT */
+    .main { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .header { padding: 30px 40px 20px; border-bottom: 1px solid var(--border); background: rgba(6, 7, 18, 0.9); backdrop-filter: blur(10px); }
+    .header h1 { margin: 0 0 8px 0; font-size: 28px; }
+    .header p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    /* LAYOUT */
+    .lab-container {
+      flex: 1; padding: 30px 40px; overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 360px; gap: 30px;
+    }
+    .lab-container::-webkit-scrollbar { width: 8px; }
+    .lab-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .glass-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; backdrop-filter: blur(8px);
+    }
+    .glass-panel h3 { margin: 0 0 20px 0; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+
+    /* MAP / CANVAS AREA */
+    .map-wrapper {
+      width: 100%; aspect-ratio: 16/10; background: #0c1015;
+      border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+      position: relative; box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+    }
+    #simCanvas { width: 100%; height: 100%; display: block; }
+    
+    .map-overlay {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 8px;
+      font-family: monospace; font-size: 12px; border: 1px solid var(--border);
+      pointer-events: none;
+    }
+
+    /* CONTROLS */
+    .control-group { margin-bottom: 24px; }
+    .control-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .control-label { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .control-val { font-family: monospace; font-size: 15px; color: #fff; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    /* CUSTOM SLIDERS */
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0;
+    }
+    input[type=range]:focus { outline: none; }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%; height: 6px; cursor: pointer;
+      background: rgba(255,255,255,0.1); border-radius: 3px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 18px; width: 18px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      -webkit-appearance: none; margin-top: -6px;
+      box-shadow: 0 0 10px var(--accent);
+    }
+    input[type=range]#windDir::-webkit-slider-thumb { background: #a5b4fc; box-shadow: 0 0 10px #a5b4fc; }
+    input[type=range]#temp::-webkit-slider-thumb { background: var(--fire); box-shadow: 0 0 10px var(--fire); }
+    input[type=range]#humidity::-webkit-slider-thumb { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+
+    .wind-compass {
+      width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border);
+      position: relative; display: flex; align-items: center; justify-content: center;
+      margin-left: auto; margin-right: auto; margin-bottom: 10px;
+    }
+    .wind-arrow {
+      width: 2px; height: 18px; background: #a5b4fc; position: absolute;
+      bottom: 50%; transform-origin: bottom center; transition: transform 0.2s;
+    }
+    .wind-arrow::after {
+      content: ''; position: absolute; top: -4px; left: -3px;
+      border-left: 4px solid transparent; border-right: 4px solid transparent;
+      border-bottom: 6px solid #a5b4fc;
+    }
+
+    .btn-row { display: flex; gap: 12px; margin-top: 30px; }
+    .btn {
+      flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #ff7a2a 0%, #f12711 100%); color: #fff; box-shadow: 0 4px 15px rgba(255, 122, 42, 0.3); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+    .risk-badge {
+      display: inline-block; padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="brand"><div class="dot"></div> FIREVISION</div>
+    <div class="nav-links">
+      <a href="index.html">00. Home</a>
+      <a href="dashboard.html">01. Mission Control</a>
+      <a href="alerts.html">02. Alerts Timeline</a>
+      <a href="ai.html">03. AI Intelligence</a>
+      <a href="scenario.html" class="active">04. Scenario Lab</a>
+      <a href="replay.html">05. Incident Replay</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <h1>Scenario Lab</h1>
+      <p>Predictive Fire Spread Simulation based on Environmental Factors</p>
+    </div>
+
+    <div class="lab-container">
+      
+      <div class="glass-panel" style="display: flex; flex-direction: column;">
+        <h3>Spread Prediction Map</h3>
+        <div class="map-wrapper">
+          <canvas id="simCanvas"></canvas>
+          <div class="map-overlay">
+            Status: <span id="simStatus" style="color: var(--safe);">Ready</span><br>
+            Burned Area: <span id="burnedArea">0</span> Ha
+          </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <div class="control-label">Calculated Threat Level</div>
+          <div id="riskBadge" class="risk-badge" style="background: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3);">Low Risk</div>
+          <p style="font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.5;">
+            The algorithm calculates spread probability based on the selected variables. Wind direction pushes the fire front, while high temperatures and low humidity accelerate ignition rates.
+          </p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <h3>Environment Variables</h3>
+        
+        <div class="wind-compass">
+          <div class="wind-arrow" id="windArrow"></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-label">Wind Speed</span>
+            <span class="control-val" id="valSpeed">15 km/h</span>
+          </div>
+          <input type="range" id="windSpeed" min="0" max="80" value="15">
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-label">Wind Direction</span>
+            <span class="control-val" id="valDir">45° (NE)</span>
+          </div>
+          <input type="range" id="windDir" min="0" max="359" value="45">
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-label">Temperature</span>
+            <span class="control-val" id="valTemp">28°C</span>
+          </div>
+          <input type="range" id="temp" min="0" max="50" value="28">
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <span class="control-label">Humidity</span>
+            <span class="control-val" id="valHum">40%</span>
+          </div>
+          <input type="range" id="humidity" min="5" max="100" value="40">
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="btnReset">Reset Area</button>
+          <button class="btn btn-primary" id="btnPlay">Start Simulation</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- UI Controls ---
+    const windSpeedEl = document.getElementById('windSpeed');
+    const windDirEl = document.getElementById('windDir');
+    const tempEl = document.getElementById('temp');
+    const humEl = document.getElementById('humidity');
+    
+    const valSpeed = document.getElementById('valSpeed');
+    const valDir = document.getElementById('valDir');
+    const valTemp = document.getElementById('valTemp');
+    const valHum = document.getElementById('valHum');
+    const windArrow = document.getElementById('windArrow');
+    const riskBadge = document.getElementById('riskBadge');
+    
+    const btnPlay = document.getElementById('btnPlay');
+    const btnReset = document.getElementById('btnReset');
+    const burnedAreaEl = document.getElementById('burnedArea');
+    const simStatusEl = document.getElementById('simStatus');
+
+    function getCompassDir(deg) {
+      const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
+      return dirs[Math.round((deg % 360) / 45)];
+    }
+
+    function updateControls() {
+      valSpeed.textContent = `${windSpeedEl.value} km/h`;
+      valDir.textContent = `${windDirEl.value}° (${getCompassDir(windDirEl.value)})`;
+      valTemp.textContent = `${tempEl.value}°C`;
+      valHum.textContent = `${humEl.value}%`;
+      
+      windArrow.style.transform = `rotate(${windDirEl.value}deg)`;
+      calculateRisk();
+    }
+
+    function calculateRisk() {
+      const speed = parseInt(windSpeedEl.value);
+      const t = parseInt(tempEl.value);
+      const h = parseInt(humEl.value);
+      
+      const riskScore = (speed * 1.5) + (t * 2) - (h * 1.2);
+      
+      if (riskScore > 80) {
+        riskBadge.textContent = "EXTREME RISK";
+        riskBadge.style.background = "rgba(248, 113, 113, 0.2)";
+        riskBadge.style.color = "var(--danger)";
+        riskBadge.style.borderColor = "rgba(248, 113, 113, 0.3)";
+      } else if (riskScore > 30) {
+        riskBadge.textContent = "MODERATE RISK";
+        riskBadge.style.background = "rgba(251, 191, 36, 0.2)";
+        riskBadge.style.color = "#fbbf24";
+        riskBadge.style.borderColor = "rgba(251, 191, 36, 0.3)";
+      } else {
+        riskBadge.textContent = "LOW RISK";
+        riskBadge.style.background = "rgba(74, 222, 128, 0.2)";
+        riskBadge.style.color = "var(--safe)";
+        riskBadge.style.borderColor = "rgba(74, 222, 128, 0.3)";
+      }
+    }
+
+    [windSpeedEl, windDirEl, tempEl, humEl].forEach(el => el.addEventListener('input', updateControls));
+    updateControls();
+
+    // --- Canvas Simulation ---
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    const GRID_W = 120;
+    const GRID_H = 80;
+    let grid = []; 
+    let isPlaying = false;
+    let animationId;
+    let burnedCount = 0;
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      // Защита от нулевого размера, если элементы еще не прорисовались
+      if(rect.width > 0 && rect.height > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        drawGrid();
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initGrid() {
+      grid = new Array(GRID_W).fill(0).map(() => new Array(GRID_H).fill(0));
+      
+      // ИНИЦИАЛИЗАЦИЯ: делаем очаг крупнее (3х3), чтобы он точно не потух на первом же кадре
+      const cx = Math.floor(GRID_W/2);
+      const cy = Math.floor(GRID_H/2);
+      for(let i = -1; i <= 1; i++){
+        for(let j = -1; j <= 1; j++){
+          grid[cx + i][cy + j] = 1;
+        }
+      }
+      
+      burnedCount = 9;
+      burnedAreaEl.textContent = burnedCount;
+      drawGrid();
+    }
+
+    function drawGrid() {
+      // Защита: если холст еще не загрузился
+      if(canvas.width === 0) return;
+
+      const cellW = canvas.width / GRID_W;
+      const cellH = canvas.height / GRID_H;
+      
+      ctx.fillStyle = '#0c1015'; // Фон
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let x = 0; x < GRID_W; x++) {
+        for (let y = 0; y < GRID_H; y++) {
+          const state = grid[x][y];
+          if (state === 0) continue; 
+          
+          if (state === 1) {
+            // Оптимизировано: убраны тяжелые shadowBlur, чтобы не висло
+            ctx.fillStyle = Math.random() > 0.5 ? '#ff7a2a' : '#f87171';
+          } else if (state === 2) {
+            ctx.fillStyle = '#1e242d'; // Пепел
+          }
+          ctx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
+        }
+      }
+    }
+
+    function stepSimulation() {
+      if (!isPlaying) return;
+
+      const newGrid = grid.map(arr => [...arr]);
+      const speed = parseInt(windSpeedEl.value);
+      const angle = parseInt(windDirEl.value) * (Math.PI / 180);
+      const temp = parseInt(tempEl.value);
+      const hum = parseInt(humEl.value);
+
+      const wX = Math.sin(angle);
+      const wY = -Math.cos(angle); 
+
+      const baseProb = Math.max(0.01, (temp / 100) - (hum / 300));
+      let stillBurning = false;
+
+      for (let x = 1; x < GRID_W - 1; x++) {
+        for (let y = 1; y < GRID_H - 1; y++) {
+          if (grid[x][y] === 1) {
+            stillBurning = true;
+            
+            // Шанс что клетка сгорит и превратится в пепел (10%)
+            if (Math.random() < 0.1) {
+              newGrid[x][y] = 2;
+            }
+
+            // Пытается поджечь соседей
+            const neighbors = [
+              {dx: 0, dy: -1}, {dx: 1, dy: -1}, {dx: 1, dy: 0}, {dx: 1, dy: 1},
+              {dx: 0, dy: 1}, {dx: -1, dy: 1}, {dx: -1, dy: 0}, {dx: -1, dy: -1}
+            ];
+
+            for (let n of neighbors) {
+              const nx = x + n.dx;
+              const ny = y + n.dy;
+
+              if (grid[nx][ny] === 0) { 
+                const len = Math.sqrt(n.dx*n.dx + n.dy*n.dy);
+                const dirX = n.dx / len;
+                const dirY = n.dy / len;
+
+                const dot = (dirX * wX) + (dirY * wY); 
+                const windMultiplier = 1 + (dot * (speed / 15)); 
+                
+                const igniteProb = baseProb * Math.max(0.1, windMultiplier);
+
+                if (Math.random() < igniteProb) {
+                  newGrid[nx][ny] = 1;
+                  burnedCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      grid = newGrid;
+      burnedAreaEl.textContent = burnedCount;
+      drawGrid();
+
+      if (stillBurning) {
+        // Ограничили частоту кадров (setTimeout вместо requestAnimationFrame), чтобы браузер дышал свободно
+        animationId = setTimeout(stepSimulation, 60); 
+      } else {
+        isPlaying = false;
+        btnPlay.textContent = "Start Simulation";
+        simStatusEl.textContent = "Fire Extinguished";
+        simStatusEl.style.color = "var(--muted)";
+      }
+    }
+
+    // Кнопки
+    btnPlay.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        btnPlay.textContent = "Pause Simulation";
+        simStatusEl.textContent = "Active Spread";
+        simStatusEl.style.color = "var(--fire)";
+        stepSimulation();
+      } else {
+        btnPlay.textContent = "Resume Simulation";
+        simStatusEl.textContent = "Paused";
+        simStatusEl.style.color = "var(--warning)";
+        clearTimeout(animationId);
+      }
+    });
+
+    btnReset.addEventListener('click', () => {
+      isPlaying = false;
+      clearTimeout(animationId);
+      btnPlay.textContent = "Start Simulation";
+      simStatusEl.textContent = "Ready";
+      simStatusEl.style.color = "var(--safe)";
+      initGrid();
+    });
+
+    // Запуск после небольшой задержки для прорисовки стилей
+    setTimeout(() => {
+      resizeCanvas();
+      initGrid();
+    }, 200);
+  </script>
+</body>
+</html>

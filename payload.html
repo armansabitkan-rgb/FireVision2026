@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision — Technical Specifications</title>
+  <style>
+    :root {
+      --bg: #010205;
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.7);
+      --accent: #00f2fe; 
+      --fire: #ff3300;   
+      --glass: rgba(10, 15, 25, 0.65);
+      --border: rgba(0, 242, 254, 0.2);
+      
+      --font-headline: clamp(26px, 3vw, 36px);
+      --font-title: 15px;
+      --font-desc: 13px;
+    }
+
+    html, body {
+      margin: 0; padding: 0; height: 100%; overflow: hidden;
+      background-color: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+      
+      /* 2D BLUEPRINT GRID BACKGROUND */
+      background-image: 
+        linear-gradient(rgba(0, 242, 254, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 242, 254, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      background-position: center center;
+    }
+
+    #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    .vignette {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%);
+    }
+
+    .ui-overlay {
+      position: relative; z-index: 10; height: 100%; pointer-events: none; 
+    }
+
+    /* TOP HEADER */
+    .header {
+      position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box;
+      padding: 30px 50px; display: flex; align-items: flex-start; justify-content: space-between;
+      background: linear-gradient(180deg, rgba(1,2,5,0.95) 0%, transparent 100%);
+    }
+    .brand { display: flex; align-items: center; gap: 15px; font-weight: 800; font-size: 24px; letter-spacing: 0.1em; pointer-events: auto; text-decoration: none; color: #fff; }
+    .brand .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--fire); box-shadow: 0 0 20px var(--fire); animation: pulseDot 3s infinite ease-in-out; }
+    
+    .back-btn {
+      pointer-events: auto; text-decoration: none; color: var(--accent); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 24px;
+      border: 1px solid var(--border); border-radius: 10px; background: rgba(0,242,254,0.05); transition: 0.3s ease; backdrop-filter: blur(10px);
+    }
+    .back-btn:hover { background: rgba(0,242,254,0.15); box-shadow: 0 0 20px rgba(0,242,254,0.3); transform: translateY(-2px); }
+
+    /* HUD TARGETING INFO (Center Top) */
+    .hud-info {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      text-align: center; display: flex; flex-direction: column; align-items: center;
+    }
+    .hud-info h1 { margin: 0; font-size: var(--font-headline); font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; text-shadow: 0 0 25px rgba(0,242,254,0.5); }
+    .hud-info p { margin: 8px 0 0 0; color: var(--accent); font-family: monospace; font-size: 14px; letter-spacing: 0.1em; }
+    .hud-info .status { margin-top: 15px; display: inline-block; padding: 6px 16px; background: rgba(255,51,0,0.15); border: 1px solid var(--fire); color: var(--fire); font-weight: bold; font-family: monospace; letter-spacing: 0.05em; font-size: 13px; animation: flashWarning 1.5s infinite ease-in-out; }
+
+    /* SIDE PANELS (Left and Right) */
+    .tech-panel-left {
+      position: absolute; top: 55%; left: 50px; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 20px; width: 380px; pointer-events: auto;
+    }
+    .tech-panel-right {
+      position: absolute; top: 55%; right: 50px; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 20px; width: 380px; pointer-events: auto;
+    }
+
+    .tech-card {
+      background: var(--glass); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); padding: 25px; border-radius: 20px;
+      transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); position: relative; overflow: hidden;
+    }
+    .tech-card:hover { transform: translateY(-5px); background: rgba(20, 25, 40, 0.9); border-color: rgba(255,255,255,0.3); box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
+
+    .card-icon { width: 45px; height: 45px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--accent); transition: 0.3s; }
+    .card-icon svg { width: 24px; height: 24px; stroke-width: 1.5; color: inherit; }
+    
+    /* Hover effects for specific cards */
+    .tech-card.opt:hover .card-icon { color: #4facfe; background: rgba(79,172,254,0.15); }
+    .tech-card.therm:hover .card-icon { color: var(--fire); background: rgba(255,51,0,0.15); }
+    .tech-card.swir:hover .card-icon { color: #f6d365; background: rgba(246,211,101,0.15); }
+    .tech-card.ai:hover .card-icon { color: var(--accent); background: rgba(0,242,254,0.15); }
+
+    .tech-card h3 { margin: 0 0 10px 0; font-size: var(--font-title); font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; }
+    .tech-card p { margin: 0; font-size: var(--font-desc); line-height: 1.6; color: var(--muted); text-align: justify; }
+
+    /* Animations */
+    @keyframes pulseDot { 0% { box-shadow: 0 0 15px var(--fire); } 50% { box-shadow: 0 0 35px var(--fire); } 100% { box-shadow: 0 0 15px var(--fire); } }
+    @keyframes flashWarning { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    
+    /* Crosshair */
+    .crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 500px; height: 500px; border: 1px solid rgba(0,242,254,0.05); border-radius: 50%;
+      pointer-events: none; z-index: 5;
+    }
+    .crosshair::before, .crosshair::after { content: ''; position: absolute; background: rgba(0,242,254,0.1); }
+    .crosshair::before { top: 50%; left: -40px; width: 580px; height: 1px; }
+    .crosshair::after { left: 50%; top: -40px; height: 580px; width: 1px; }
+
+    .drag-hint {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      font-family: monospace; font-size: 13px; color: rgba(255,255,255,0.4); text-transform: uppercase; pointer-events: none; letter-spacing: 0.2em;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <div class="vignette"></div>
+  <div class="crosshair"></div>
+
+  <div class="ui-overlay">
+    
+    <div class="header">
+      <div class="brand"><div class="dot"></div><div class="name">FIREVISION</div></div>
+      <a href="dashboard.html" class="back-btn">BACK TO MCC</a>
+    </div>
+
+    <div class="hud-info">
+      <h1>TECHNICAL SPECIFICATIONS</h1>
+      <p>FIREVISION-SAT HARDWARE COMPLEX</p>
+      <div class="status">⚠ ACTIVE SURFACE SCANNING</div>
+    </div>
+
+    <div class="tech-panel-left">
+      <div class="tech-card opt">
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor"/></svg></div>
+        <h3>Optical Monitoring</h3>
+        <p>Ultra-high resolution multispectral cameras (up to 0.5 m/pix). Analyze aerosol patterns, detecting smoke microparticles at the smoldering stage, before flames appear on areas less than 10 sq.m.</p>
+      </div>
+      <div class="tech-card therm">
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor"/></svg></div>
+        <h3>Infrared Thermography</h3>
+        <p>Thermal radiation detectors (8-14 µm range). Work effectively through thick smoke, dense canopy, and at night. Instantly detect temperature anomalies above 300°C with an accuracy of 0.1°C.</p>
+      </div>
+    </div>
+
+    <div class="tech-panel-right">
+      <div class="tech-card swir">
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke="currentColor"/></svg></div>
+        <h3>SWIR Spectrometry</h3>
+        <p>Short-wave infrared range (1.4–3 µm) analyzes the chemical signature of objects. 100% accurate in distinguishing burning biomass from false positives: solar flares, heated rocks, or metal roofs.</p>
+      </div>
+      <div class="tech-card ai">
+        <div class="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor"/></svg></div>
+        <h3>Onboard Computing (Edge AI)</h3>
+        <p>Integrated Tensor Processing Unit (TPU) hardware accelerates the YOLOv8 neural network. Analysis takes <50 ms. The satellite sends only a lightweight JSON packet with coordinates, saving 99% of data transmission time.</p>
+      </div>
+    </div>
+
+    <div class="drag-hint">[ HOLD & DRAG LMB TO INSPECT SATELLITE ]</div>
+  </div>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <script>
+    // ==========================================
+    // 1. SCENE SETUP
+    // ==========================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x010205);
+    scene.fog = new THREE.FogExp2(0x010205, 0.02); // Kept fog for depth, but reduced stars opacity slightly
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 9); 
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0); 
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 2. LIGHTING (Soft Cinematic)
+    // ==========================================
+    scene.add(new THREE.AmbientLight(0x111122, 1.5)); 
+    
+    const sunLight = new THREE.DirectionalLight(0xfff5e0, 3.5);
+    sunLight.position.set(10, 8, 5);
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0x3388ff, 2.0);
+    fillLight.position.set(-8, -5, 2);
+    scene.add(fillLight);
+
+    // ==========================================
+    // 3. GENERATIVE TEXTURES
+    // ==========================================
+    function makeSolarTex() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512; const ctx = c.getContext('2d');
+      ctx.fillStyle = '#060f1e'; ctx.fillRect(0, 0, 512, 512);
+      ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 3;
+      for (let x = 0; x <= 512; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke(); }
+      for (let y = 0; y <= 512; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex;
+    }
+
+    // ==========================================
+    // 4. ENVIRONMENT (Stars & Nebula)
+    // ==========================================
+    // Denser star field behind the satellite
+    const starsGeo = new THREE.BufferGeometry();
+    const starsPos = new Float32Array(5000 * 3); // Increased star count
+    for(let i=0; i<5000*3; i++) { starsPos[i] = (Math.random() - 0.5) * 130; } // slightly wider spread
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+    // Kept size same, reduced opacity slightly for "background" feel
+    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.5 });
+    const starField = new THREE.Points(starsGeo, starsMat);
+    scene.add(starField);
+
+    const nebulaGeo = new THREE.SphereGeometry(65, 32, 32);
+    const nebulaMat = new THREE.MeshBasicMaterial({ color: 0x011122, side: THREE.BackSide, transparent: true, opacity: 0.15 });
+    const nebula = new THREE.Mesh(nebulaGeo, nebulaMat);
+    scene.add(nebula);
+
+    // ==========================================
+    // 5. MODULAR SATELLITE (Гексагональный корпус)
+    // ==========================================
+    const satellite = new THREE.Group();
+    scene.add(satellite);
+
+    const matGoldFoil = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.5, metalness: 0.6 });
+    const matSilverMatte = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.6, metalness: 0.4 });
+    const matDarkModular = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.8, metalness: 0.2 });
+    const matSolar = new THREE.MeshStandardMaterial({ map: makeSolarTex(), roughness: 0.3, metalness: 0.45 });
+    const matLensGlass = new THREE.MeshStandardMaterial({ color: 0x0a0a0d, roughness: 0.05, metalness: 1.0 });
+
+    const bodyGeo = new THREE.CylinderGeometry(0.8, 0.8, 2.4, 6);
+    bodyGeo.rotateX(Math.PI / 2); 
+    const body = new THREE.Mesh(bodyGeo, matSilverMatte);
+    satellite.add(body);
+
+    const foilGeo = new THREE.CylinderGeometry(0.82, 0.82, 1.8, 6);
+    foilGeo.rotateX(Math.PI / 2);
+    const foil = new THREE.Mesh(foilGeo, matGoldFoil);
+    foil.position.y = -0.1;
+    satellite.add(foil);
+
+    // Солнечные панели
+    const panels = new THREE.Group();
+    const sPanelGeo = new THREE.BoxGeometry(1.2, 2.4, 0.06);
+    
+    function createPanelSegment(posX, rotZ=0) {
+      const g = new THREE.Group(); g.position.x = posX; g.rotation.z = rotZ;
+      const s = new THREE.Mesh(sPanelGeo, matSolar); g.add(s);
+      return g;
+    }
+    
+    const panelL = createPanelSegment(-2.0); panels.add(panelL);
+    const panelR = createPanelSegment(2.0); panels.add(panelR);
+    const panelL2 = createPanelSegment(-3.3, 0.1); panels.add(panelL2);
+    const panelR2 = createPanelSegment(3.3, -0.1); panels.add(panelR2);
+    
+    const armGeo = new THREE.BoxGeometry(1.0, 0.15, 0.2);
+    const armL = new THREE.Mesh(armGeo, matDarkModular); armL.position.x = -1.2; panels.add(armL);
+    const armR = new THREE.Mesh(armGeo, matDarkModular); armR.position.x = 1.2; panels.add(armR);
+    satellite.add(panels);
+
+    // Оптический комплекс
+    const optics = new THREE.Group();
+    optics.position.set(0, -1.0, 0.7);
+    
+    const mainLensBox = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.45, 32), matDarkModular);
+    mainLensBox.rotation.x = Math.PI/2; mainLensBox.position.y = 0.2; optics.add(mainLensBox);
+    const mainGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.48, 32), matLensGlass);
+    mainGlass.rotation.x = Math.PI/2; mainGlass.position.y = 0.2; optics.add(mainGlass);
+
+    const sLens1 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.35, 16), matDarkModular); sLens1.rotation.x = Math.PI/2; sLens1.position.set(-0.6, 0.5, 0.2); optics.add(sLens1);
+    const sGlass1 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.4, 16), matLensGlass); sGlass1.rotation.x = Math.PI/2; sGlass1.position.set(-0.6, 0.5, 0.2); optics.add(sGlass1);
+    
+    const sLens2 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.35, 16), matDarkModular); sLens2.rotation.x = Math.PI/2; sLens2.position.set(0.6, 0.5, 0.2); optics.add(sLens2);
+    const sGlass2 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.4, 16), matLensGlass); sGlass2.rotation.x = Math.PI/2; sGlass2.position.set(0.6, 0.5, 0.2); optics.add(sGlass2);
+    satellite.add(optics);
+
+    // Антенна
+    const antenna = new THREE.Group();
+    antenna.position.set(0, 1.4, 0);
+    const aBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6), matSilverMatte); antenna.add(aBase);
+    const aDish = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.15, 0.2, 32, 1, true), matDarkModular); aDish.position.y = 0.35; aDish.rotation.x = -Math.PI/7; antenna.add(aDish);
+    satellite.add(antenna);
+
+    // ==========================================
+    // 6. BLINKING SCANNER BUTTON (ЭФФЕКТ МЕРЦАНИЯ)
+    // ==========================================
+    const scannerPulseGroup = new THREE.Group();
+    scannerPulseGroup.position.set(0, 0.2, 0.25);
+    
+    // Светящееся ядро
+    const btnGeo = new THREE.CircleGeometry(0.24, 32);
+    const btnMat = new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+    const scanButton = new THREE.Mesh(btnGeo, btnMat);
+    scannerPulseGroup.add(scanButton);
+
+    optics.add(scannerPulseGroup);
+
+    const fireLight = new THREE.PointLight(0xff3300, 1.5, 5);
+    fireLight.position.set(0, 0.2, 0.5); 
+    optics.add(fireLight);
+
+    // Стартовое положение спутника
+    satellite.rotation.x = 0.2;
+    satellite.rotation.y = -0.5;
+
+    // ==========================================
+    // 7. SMOOTH INTERACTION CONTROLS
+    // ==========================================
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    
+    let targetRotX = satellite.rotation.x;
+    let targetRotY = satellite.rotation.y;
+    let mouseX = 0; let mouseY = 0;
+
+    window.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.offsetX, y: e.offsetY };
+      document.body.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      if (isDragging) {
+        const deltaMove = { x: e.offsetX - previousMousePosition.x, y: e.offsetY - previousMousePosition.y };
+        targetRotY += deltaMove.x * 0.008; 
+        targetRotX += deltaMove.y * 0.008;
+        
+        targetRotX = Math.max(-1.0, Math.min(1.0, targetRotX)); 
+        previousMousePosition = { x: e.offsetX, y: e.offsetY };
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; document.body.style.cursor = 'default'; });
+    window.addEventListener('mouseleave', () => { isDragging = false; document.body.style.cursor = 'default'; });
+
+    // ==========================================
+    // 8. ANIMATION LOOP
+    // ==========================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+
+      // Плавная инерция вращения спутника
+      satellite.rotation.x += (targetRotX - satellite.rotation.x) * 0.05;
+      satellite.rotation.y += (targetRotY - satellite.rotation.y) * 0.05;
+
+      // Мягкий параллакс
+      satellite.position.x += ((mouseX * 0.3) - satellite.position.x) * 0.03;
+      satellite.position.y += ((mouseY * 0.3) - satellite.position.y) * 0.03;
+
+      panels.rotation.x = Math.sin(time * 0.4) * 0.05; 
+      antenna.rotation.y = time * 0.3; 
+
+      // ЭФФЕКТ МИГАЮЩЕЙ ТОЧКИ (Flickering effect)
+      const pulsePhase = (Math.sin(time * 3) + 1) / 2;
+      
+      const isFlickering = Math.random() > 0.85; 
+      const flickerMult = isFlickering ? 0.3 : 1.0; 
+
+      scanButton.material.opacity = (0.5 + pulsePhase * 0.5) * flickerMult;
+      fireLight.intensity = (1.0 + pulsePhase * 1.5) * flickerMult;
+
+      // Вращение космоса (звезды крутятся сзади)
+      starField.rotation.y = time * 0.003;
+      nebula.rotation.y = time * 0.0015;
+
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+  </script>
+</body>
+</html>
