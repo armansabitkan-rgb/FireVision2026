@@ -243,8 +243,8 @@
     const uplinkCalc = document.getElementById('uplinkCalc');
     let calcInterval; // Таймер для бегущих цифр
 
-    // Настройки модели
-    const MODEL_URL = "./my_model/";
+    // Настройки модели ИСПРАВЛЕНЫ под структуру GitHub
+    const MODEL_URL = "./models/"; 
     let tmModel = null;
 
     function logTerm(msg, type="term-sys") {
@@ -436,4 +436,5 @@
     setTimeout(resizeCanvas, 100);
   </script>
 </body>
+
 </html>
