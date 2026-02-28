@@ -213,6 +213,7 @@
     earth.add(atmosphere);
 
     const loader = new THREE.TextureLoader();
+    // ИСПРАВЛЕННЫЙ ПУТЬ: теперь мы берем текстуру из папки assets
     loader.load('assets/earth.jpg', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         earth.material.map = tex;
@@ -416,4 +417,5 @@
     });
   </script>
 </body>
+
 </html>
