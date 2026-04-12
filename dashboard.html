@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision Mission Control (Dashboard)</title>
+  <style>
+    /* ================= CORE STYLES ================= */
+    html, body { 
+      margin: 0; 
+      height: 100%; 
+      overflow: hidden; 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background-color: #0b0c10;
+      color: #fff;
+    }
+    
+    #app { 
+      position: fixed; 
+      inset: 0; 
+      z-index: 1; 
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      bottom: 0;
+      width: 260px;
+      background: rgba(11, 12, 16, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(69, 162, 158, 0.2);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      z-index: 20;
+      box-sizing: border-box;
+    }
+    
+    .brand {
+      display: flex; 
+      align-items: center; 
+      gap: 12px;
+      font-weight: 900; 
+      font-size: 20px; 
+      letter-spacing: 0.1em; 
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .brand .dot {
+      width: 14px; 
+      height: 14px; 
+      border-radius: 50%;
+      background: #ff3300; 
+      box-shadow: 0 0 15px #ff3300;
+    }
+    
+    .nav-links { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+    }
+    
+    .nav-links a {
+      text-decoration: none; 
+      color: rgba(255, 255, 255, 0.4);
+      padding: 14px 18px; 
+      border-radius: 12px;
+      font-weight: 600; 
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-links a:hover {
+      background: rgba(69, 162, 158, 0.1); 
+      color: #fff;
+    }
+    
+    .nav-links a.active {
+      background: rgba(69, 162, 158, 0.15);
+      color: #66fcf1;
+      border: 1px solid rgba(69, 162, 158, 0.3);
+      box-shadow: 0 0 15px rgba(102, 252, 241, 0.1);
+    }
+
+    /* ================= ZOOM CONTROLS ================= */
+    .zoom-controls {
+      position: fixed; 
+      left: 285px; 
+      bottom: 40px; 
+      z-index: 25;
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px;
+    }
+    
+    .zoom-btn {
+      width: 48px; 
+      height: 48px; 
+      border-radius: 14px; 
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(31, 40, 51, 0.8); 
+      backdrop-filter: blur(12px); 
+      color: #fff;
+      font-size: 26px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      cursor: pointer; 
+      transition: all 0.2s; 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      user-select: none;
+    }
+    
+    .zoom-btn:hover { 
+      background: rgba(69, 162, 158, 0.2); 
+      border-color: #66fcf1; 
+    }
+
+    /* ================= MAIN DATA UI ================= */
+    #ui {
+      position: fixed;
+      top: 25px; 
+      right: 25px;
+      width: 450px; 
+      max-width: 90vw;
+      max-height: calc(100vh - 50px);
+      overflow-y: auto;
+      background: rgba(31, 40, 51, 0.85);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 25px;
+      z-index: 20;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    
+    #ui::-webkit-scrollbar { width: 6px; }
+    #ui::-webkit-scrollbar-thumb { background: rgba(102, 252, 241, 0.2); border-radius: 10px; }
+
+    h1 { font-size: 22px; margin: 0 0 15px 0; font-weight: 800; color: #ffffff; }
+    
+    .step { 
+      background: rgba(11, 12, 16, 0.5); 
+      border-radius: 16px; 
+      padding: 20px; 
+      margin: 15px 0;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .step b { 
+      display: block; 
+      margin-bottom: 12px; 
+      font-size: 15px; 
+      color: #66fcf1; 
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    button.run-btn {
+      width: 100%; 
+      padding: 16px; 
+      border-radius: 12px; 
+      border: none;
+      background: linear-gradient(135deg, #45a29e 0%, #66fcf1 100%);
+      color: #0b0c10; 
+      font-weight: 900; 
+      cursor: pointer; 
+      font-size: 14px;
+      letter-spacing: 1px;
+      box-shadow: 0 8px 25px rgba(69, 162, 158, 0.3);
+      transition: all 0.3s;
+    }
+    
+    button.run-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+    .random-btn {
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 12px; 
+      border: 1px solid rgba(102, 252, 241, 0.3);
+      background: rgba(69, 162, 158, 0.1);
+      color: #66fcf1; 
+      font-weight: 700; 
+      cursor: pointer; 
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.3s;
+      margin-top: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .random-btn:hover { 
+      background: rgba(69, 162, 158, 0.3); 
+      border-color: #66fcf1;
+      transform: translateY(-2px);
+    }
+
+    .hint { opacity: 0.7; font-size: 13px; margin-bottom: 6px; }
+    .mono { font-family: 'Courier New', Courier, monospace; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 6px; color: #66fcf1; font-weight: bold; }
+    
+    /* CUSTOM FILE UPLOAD STYLING */
+    .file-upload-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(197, 198, 199, 0.3);
+      background: rgba(11, 12, 16, 0.6);
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: 0.3s;
+    }
+
+    .file-upload-wrapper:hover {
+      border-color: rgba(102, 252, 241, 0.6);
+      background: rgba(11, 12, 16, 0.8);
+    }
+
+    .custom-file-btn {
+      background: #c5c6c7;
+      color: #0b0c10;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .custom-file-name {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    
+    .smallRow { display: flex; gap: 15px; margin-top: 5px; }
+    .field { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .field label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 800; }
+    
+    input[type="number"] {
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1); 
+      background: rgba(11, 12, 16, 0.8);
+      color: #fff; 
+      outline: none;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    .statusBadge {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 10px;
+      padding: 8px 16px; 
+      border-radius: 20px;
+      background: rgba(11, 12, 16, 0.8); 
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .dot-status { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+    .dot-status.ok { background: #00ff88; box-shadow: 0 0 12px #00ff88; }
+    .dot-status.wait { background: #ffaa00; box-shadow: 0 0 12px #ffaa00; }
+
+    .resultCard {
+      margin-top: 20px; 
+      border-radius: 16px;
+      background: rgba(11, 12, 16, 0.5);
+      padding: 20px; 
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .alertLabel {
+      padding: 6px 14px; 
+      border-radius: 8px; 
+      font-weight: 900; 
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .alertSafe { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+    .alertDanger { background: rgba(255, 51, 0, 0.15); color: #ff3300; border: 1px solid rgba(255, 51, 0, 0.3); }
+    .alertNA { background: rgba(255,255,255,0.05); color: #888; }
+
+    .bigClass { margin-top: 15px; font-size: 22px; font-weight: 800; color: #fff; transition: color 0.3s; }
+    
+    .grid { margin-top: 15px; display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .kv {
+      padding: 12px 15px; 
+      border-radius: 10px;
+      background: rgba(11, 12, 16, 0.8); 
+      border: 1px solid rgba(255,255,255,0.03);
+      display: flex; 
+      flex-direction: column; 
+      gap: 5px;
+    }
+    .k { font-size: 10px; color: rgba(102, 252, 241, 0.7); text-transform: uppercase; font-weight: 800; }
+    .v { font-size: 13px; color: #fff; font-weight: 600; }
+
+    /* EXPERT CONTROLS */
+    .action-btn {
+      flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: 800; font-size: 12px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-confirm { background: #ff3300; color: #fff; box-shadow: 0 5px 15px rgba(255,51,0,0.3); }
+    .btn-confirm:hover { background: #e62e00; transform: translateY(-2px); }
+    .btn-reject { background: #333; color: #fff; }
+    .btn-reject:hover { background: #444; }
+
+    /* EVAC BUTTON */
+    #btnEvac {
+      background: #00ff88; color: #000; border: none; padding: 4px 8px; 
+      border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.4); transition: 0.2s;
+    }
+    #btnEvac:hover { background: #00cc6a; transform: scale(1.05); }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div class="sidebar">
+    <a href="home.html" class="brand">
+      <div class="dot"></div> FIREVISION
+    </a>
+    <div class="nav-links">
+      <a href="home.html">00. Home</a>
+      <a href="dashboard.html" class="active">01. Mission Control</a>
+      <a href="alerts.html" id="alertsLink">02. Alerts Timeline</a>
+      <a href="ai.html">03. AI Intelligence Lab</a>
+      <a href="scenario.html">04. Scenario Lab</a>
+      <a href="replay.html">05. Incident Replay</a>
+      <a href="payload.html">06. Payload Specs</a>
+    </div>
+  </div>
+
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="btnZoomIn">+</button>
+    <button class="zoom-btn" id="btnZoomOut">−</button>
+  </div>
+
+  <div id="ui">
+    <h1 id="headerTitle">🛰 Mission Command Center</h1>
+    <div id="roleIndicator" style="font-size: 10px; color: #66fcf1; text-transform: uppercase; margin-bottom: 15px; display: none; font-weight: bold;">[DEMO MODE: TELEGRAM BROADCASTS DISABLED]</div>
+    
+    <div class="step">
+      <b>Target Designation</b>
+      <div class="hint">Click on the globe to lock target coordinates (AOI).</div>
+      <div class="hint" style="margin-top: 10px; margin-bottom: 15px;">
+        GPS: <span class="mono" id="coords">WAITING_FOR_UPLINK...</span>
+      </div>
+
+      <div class="resultCard" style="margin-top: 0; padding: 15px; border-color: rgba(69, 162, 158, 0.3); background: rgba(69, 162, 158, 0.05);">
+        <div style="font-weight:800; font-size:10px; color:#66fcf1; margin-bottom: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <span class="dot-status ok" style="animation: pulse 2s infinite;"></span> 
+          Live Weather Uplink
+        </div>
+        <div id="liveWeatherBox">
+            <div class="hint" style="font-size: 12px;">Awaiting coordinate lock...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <b>Satellite Payload</b>
+      
+      <div class="hint">Image t0 (Baseline):</div>
+      <label class="file-upload-wrapper">
+        <div class="custom-file-btn">Choose File</div>
+        <div class="custom-file-name" id="fileName1">No file chosen</div>
+        <input id="imgInput1" type="file" accept="image/*" style="display:none;" />
+      </label>
+
+      <div class="hint">Image t1 (Dynamic Analysis - Optional):</div>
+      <label class="file-upload-wrapper">
+        <div class="custom-file-btn">Choose File</div>
+        <div class="custom-file-name" id="fileName2">No file chosen</div>
+        <input id="imgInput2" type="file" accept="image/*" style="display:none;" />
+      </label>
+
+      <button class="random-btn" id="btnRandomFeed">🛸 LOAD RANDOM SATELLITE FEED</button>
+
+      <div class="smallRow">
+        <div class="field">
+          <label>Time Delta (MIN)</label>
+          <input id="dtMinutes" type="number" value="15" />
+        </div>
+        <div class="field">
+          <label>GSD (METERS/PX)</label>
+          <input id="mpp" type="number" value="15" />
+        </div>
+      </div>
+
+      <div style="margin-top:20px; display:flex; align-items:center; justify-content:space-between;">
+        <span class="statusBadge" id="modelStatus">
+          <span class="dot-status wait"></span>AI ENGINE: BOOTING
+        </span>
+      </div>
+      
+      <button class="run-btn" id="run" style="margin-top:15px;">ANALYZE IMAGE</button>
+
+      <div class="resultCard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:800; font-size:11px; color:rgba(255,255,255,0.4);">ANALYSIS REPORT</span>
+          <div class="alertLabel alertNA" id="alertLabel">STANDBY</div>
+        </div>
+        
+        <div class="bigClass" id="mainLabel">Awaiting Data...</div>
+        
+        <div id="explainabilityBox" style="display:none; margin-top:15px; position:relative; border-radius:12px; overflow:hidden; border: 1px solid rgba(255,51,0,0.3);">
+          <div style="background: rgba(255,51,0,0.2); padding: 8px 10px; font-size:10px; font-weight:bold; color:#ff3300; display:flex; justify-content:space-between; align-items:center;">
+            <span>AI PIXEL ANALYSIS</span>
+            <div style="display: flex; gap: 5px;">
+              <button id="btnEvac" style="display:none;">PLOT EVAC ROUTE</button>
+              <button id="btnToggleImage" style="display:none; background:#333; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:9px; font-weight:bold; cursor:pointer;">SHOW IMAGE 2</button>
+              <button id="btnTogglePixels" style="background:#ff3300; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:9px; font-weight:bold; cursor:pointer;">HIDE PIXELS</button>
+            </div>
+          </div>
+          <div style="position: relative;">
+            <img id="uiPreviewImage" style="width: 100%; display: block;" />
+            <canvas id="uiOverlayCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity 0.2s ease;"></canvas>
+          </div>
+        </div>
+
+        <div class="grid" id="metricsGrid"></div>
+
+        <div id="expertControls" style="display:none; gap: 10px; margin-top: 20px;">
+          <button class="action-btn btn-confirm" id="btnConfirm">CONFIRM THREAT</button>
+          <button class="action-btn btn-reject" id="btnReject">FALSE ALARM</button>
+        </div>
+
+      </div>
+    </div>
+    
+    <div class="hint" style="text-align:center; margin-top:15px;">
+      Broadcast Hub: <a href="https://t.me/firevision_alerts" target="_blank" style="color:#66fcf1; text-decoration:none;">@firevision_alerts</a>
+    </div>
+  </div>
+
+  <img id="imgPreview1" style="display:none" />
+  <img id="imgPreview2" style="display:none" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ===================== CONFIG =====================
+    const EARTH_TEX = 'assets/earth.jpg';
+    const MODEL_PATH = "./my_model/";
+    
+    let currentZoom = 4.6; 
+    const MIN_ZOOM = 1.5;
+    const MAX_ZOOM = 10.0;
+    let focusEnabled = false;
+    const focusTarget = new THREE.Vector3();
+
+    const coordsEl = document.getElementById('coords');
+    const alertLabel = document.getElementById('alertLabel');
+    const mainLabel = document.getElementById('mainLabel');
+    const metricsGrid = document.getElementById('metricsGrid');
+    
+    const imgInput1 = document.getElementById('imgInput1');
+    const imgInput2 = document.getElementById('imgInput2');
+    const fileName1 = document.getElementById('fileName1');
+    const fileName2 = document.getElementById('fileName2');
+
+    const imgPreview1 = document.getElementById('imgPreview1');
+    const imgPreview2 = document.getElementById('imgPreview2');
+
+    const explainabilityBox = document.getElementById('explainabilityBox');
+    const uiPreviewImage = document.getElementById('uiPreviewImage');
+    const uiOverlayCanvas = document.getElementById('uiOverlayCanvas');
+    const expertControls = document.getElementById('expertControls');
+    
+    const btnTogglePixels = document.getElementById('btnTogglePixels');
+    const btnToggleImage = document.getElementById('btnToggleImage');
+    const btnEvac = document.getElementById('btnEvac');
+    const btnRandomFeed = document.getElementById('btnRandomFeed');
+    
+    let pendingAlertPayload = null; 
+    let pixelsVisible = true;
+    let showingImage2 = false;
+
+    // ===================== LAND CLICK FILTER =====================
+    const earthSamplerCanvas = document.createElement('canvas');
+    const earthSamplerCtx = earthSamplerCanvas.getContext('2d', { willReadFrequently: true });
+    let earthSamplerReady = false;
+
+    function prepareEarthSampler(img) {
+      earthSamplerCanvas.width = img.naturalWidth || img.width;
+      earthSamplerCanvas.height = img.naturalHeight || img.height;
+      earthSamplerCtx.clearRect(0, 0, earthSamplerCanvas.width, earthSamplerCanvas.height);
+      earthSamplerCtx.drawImage(img, 0, 0, earthSamplerCanvas.width, earthSamplerCanvas.height);
+      earthSamplerReady = true;
+    }
+
+    function getEarthPixelFromUV(uv) {
+      if (!earthSamplerReady || !uv) return null;
+
+      const x = Math.max(
+        0,
+        Math.min(
+          earthSamplerCanvas.width - 1,
+          Math.floor(uv.x * (earthSamplerCanvas.width - 1))
+        )
+      );
+
+      const y = Math.max(
+        0,
+        Math.min(
+          earthSamplerCanvas.height - 1,
+          Math.floor((1 - uv.y) * (earthSamplerCanvas.height - 1))
+        )
+      );
+
+      return earthSamplerCtx.getImageData(x, y, 1, 1).data;
+    }
+
+    function isValidLandTarget(uv, lat) {
+      if (!earthSamplerReady || !uv) return false;
+
+      // Antarctica completely disabled
+      if (lat <= -60) return false;
+
+      const pixel = getEarthPixelFromUV(uv);
+      if (!pixel) return false;
+
+      const r = pixel[0];
+      const g = pixel[1];
+      const b = pixel[2];
+
+      // Ocean / sea: usually blue-dominant
+      const waterLike = b > g + 10 && b > r + 10;
+
+      // Very bright polar ice in the far south: ignore
+      const southernIceLike = lat < -50 && r > 185 && g > 185 && b > 185;
+
+      return !waterLike && !southernIceLike;
+    }
+
+    imgInput1.addEventListener('change', function(e) {
+      fileName1.textContent = e.target.files[0] ? e.target.files[0].name : "No file chosen";
+    });
+
+    imgInput2.addEventListener('change', function(e) {
+      fileName2.textContent = e.target.files[0] ? e.target.files[0].name : "No file chosen";
+    });
+
+    // ===================== ROLE CHECK =====================
+    const userRole = localStorage.getItem('firevision_role') || 'guest';
+    if (userRole === 'guest') {
+      document.getElementById('roleIndicator').style.display = 'block';
+      document.getElementById('alertsLink').style.display = 'none';
+      document.getElementById('headerTitle').innerText = '🛰 Mission Command (DEMO)';
+    }
+
+    // ===================== LIVE WEATHER =====================
+    async function fetchLiveFireRisk(lat, lon) {
+      const weatherBox = document.getElementById('liveWeatherBox');
+      weatherBox.innerHTML = '<div class="hint" style="color: #ffaa00;">Establishing uplink... fetching atmospheric data...</div>';
+
+      try {
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m`);
+        const data = await response.json();
+
+        const currentTemp = data.current_weather.temperature;
+        const currentWind = data.current_weather.windspeed;
+        const currentHumidity = data.hourly.relativehumidity_2m[0]; 
+
+        let riskLevel = "LOW RISK (Unlikely Ignition)";
+        let riskColor = "#00ff88"; 
+        
+        if (currentTemp > 30 && currentHumidity < 30 && currentWind > 15) {
+          riskLevel = "CRITICAL (High Ignition Probability)";
+          riskColor = "#ff3300"; 
+        } else if (currentTemp > 25 && currentHumidity < 45) {
+          riskLevel = "ELEVATED (Moderate Risk)";
+          riskColor = "#ffaa00"; 
+        }
+
+        weatherBox.innerHTML = `
+          <div class="grid" style="margin-top:0;">
+            <div class="kv"><div class="k">Live Temp</div><div class="v">${currentTemp} °C</div></div>
+            <div class="kv"><div class="k">Live Humidity</div><div class="v">${currentHumidity}%</div></div>
+            <div class="kv"><div class="k">Live Wind</div><div class="v">${currentWind} km/h</div></div>
+          </div>
+          <div style="margin-top: 12px; padding: 10px; background: rgba(11,12,16,0.8); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+            <span style="font-size: 10px; color: #888; font-weight: bold; letter-spacing: 0.5px;">METEOROLOGICAL THREAT MODEL:</span><br>
+            <b style="color: ${riskColor}; font-size: 13px; display: block; margin-top: 4px;">${riskLevel}</b>
+          </div>
+        `;
+      } catch (error) {
+        weatherBox.innerHTML = '<div class="hint" style="color: #ff3300;">Satellite Uplink Failed. Signal Lost.</div>';
+      }
+    }
+
+    // ===================== AUTOMATIC SATELLITE FEED & AUTO-CLICK =====================
+    const safeImages = [
+      'test_safe.jpg',
+      'test_false_alarm.jpg',
+      'forest (2).jpg',
+      'alert-false.jpg' 
+    ];
+
+    const fireImages = [
+      'test_fire_t0.jpg',
+      'California-fire-1.jpg', 
+      'alert-anomaly.jpg'      
+    ];
+
+    const fireSpreadImages = [
+      'test_fire_t1.jpg',
+      'alert-spread.jpg'
+    ];
+
+    async function fetchSmartImage(baseName) {
+      const rawName = baseName.replace(/\.[^/.]+$/, "");
+      const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.jpg.jpg', '.webp.jpg', '.jfif'];
+        
+      try {
+        const res = await fetch(`assets/${baseName}`);
+        if (res.ok) return await res.blob();
+      } catch(e) {}
+
+      for (let ext of extensions) {
+        try {
+          const res = await fetch(`assets/${rawName}${ext}`);
+          if (res.ok) {
+            return await res.blob();
+          }
+        } catch(e) {}
+      }
+      throw new Error(`Could not find any working extension for ${rawName}`);
+    }
+
+    async function autoLoadSatelliteImage() {
+      mainLabel.textContent = "Intercepting Satellite Feed...";
+      mainLabel.style.color = "#ffaa00";
+
+      imgInput2.value = '';
+      fileName2.textContent = 'No file chosen';
+
+      try {
+        const isFireScenario = Math.random() > 0.5;
+        let file1Name = '';
+        let file2Name = '';
+        let loadSecondImage = false;
+
+        if (!isFireScenario) {
+          file1Name = safeImages[Math.floor(Math.random() * safeImages.length)];
+        } else {
+          file1Name = fireImages[Math.floor(Math.random() * fireImages.length)];
+          if (Math.random() > 0.5) {
+            loadSecondImage = true;
+            file2Name = fireSpreadImages[Math.floor(Math.random() * fireSpreadImages.length)];
+          }
+        }
+
+        const randomScanID = Math.floor(Math.random() * 8999) + 1000; 
+        const displayFileName1 = `SAT_OPTICAL_${randomScanID}_t0.jpg`;
+        const displayFileName2 = `SAT_OPTICAL_${randomScanID}_t1.jpg`;
+
+        let blob1;
+        try {
+          blob1 = await fetchSmartImage(file1Name);
+        } catch(e) {
+          blob1 = await fetchSmartImage(isFireScenario ? 'test_fire_t0.jpg' : 'test_safe.jpg');
+        }
+
+        const file1 = new File([blob1], displayFileName1, { type: blob1.type || 'image/jpeg' });
+        const dt1 = new DataTransfer();
+        dt1.items.add(file1);
+        imgInput1.files = dt1.files;
+        fileName1.textContent = displayFileName1; 
+
+        if (loadSecondImage) {
+          let blob2;
+          try {
+            blob2 = await fetchSmartImage(file2Name);
+          } catch(e) {
+            blob2 = await fetchSmartImage('test_fire_t1.jpg');
+          }
+
+          const file2 = new File([blob2], displayFileName2, { type: blob2.type || 'image/jpeg' });
+          const dt2 = new DataTransfer();
+          dt2.items.add(file2);
+          imgInput2.files = dt2.files;
+          fileName2.textContent = displayFileName2; 
+            
+          mainLabel.textContent = `Feed Locked: MULTI-SPECTRAL (t0 & t1).`;
+        } else {
+          mainLabel.textContent = `Feed Locked: SINGLE SNAPSHOT.`;
+        }
+        
+        mainLabel.style.color = "#66fcf1";
+
+        setTimeout(() => {
+          document.getElementById('run').click();
+        }, 600);
+
+      } catch (err) {
+        mainLabel.textContent = "Feed Intercept Failed. Check server connection.";
+        mainLabel.style.color = "red";
+      }
+    }
+
+    // ===================== HELPER FUNCTIONS =====================
+    function getNowString() {
+      const now = new Date();
+      return now.toLocaleString('en-GB', { 
+        day:'2-digit', month:'short', year:'numeric', 
+        hour:'2-digit', minute:'2-digit', second:'2-digit' 
+      });
+    }
+
+    function normalizeClassName(name){
+      const n = (name || "").toLowerCase();
+      if (n.includes("wildfire") || (n.includes("fire") && !n.includes("false"))) return "Wildfire";
+      if (n.includes("false")) return "False Alarm";
+      return "No Fire";
+    }
+
+    function severityFrom(className, prob){
+      if (normalizeClassName(className) !== "Wildfire") return "NONE";
+      if (prob >= 0.85) return "CRITICAL";
+      if (prob >= 0.65) return "ELEVATED";
+      return "LOW";
+    }
+
+    function formatLatLonShort(lat, lon){
+      const ns = lat >= 0 ? 'N' : 'S';
+      const ew = lon >= 0 ? 'E' : 'W';
+      return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lon).toFixed(4)}°${ew}`;
+    }
+
+    function makeKV(k, v) { 
+      return `<div class="kv"><div class="k">${k}</div><div class="v">${v}</div></div>`; 
+    }
+
+    async function broadcastToTelegram(data) {
+      if (userRole === 'guest') return; 
+      const token = '8674807819:AAEhEVzKbNhOKogwEbjre7SptzGfl8stPNk';
+      const channel = '@firevision_alerts'; 
+
+      let extraInfo = "";
+      if(data.extra) {
+        extraInfo = `\n📏 <b>Area:</b> ${data.extra.area1Km2.toFixed(3)} km² (~${data.extra.area1Ha.toFixed(1)} ha)\n` +
+                    `💨 <b>Spread:</b> ${data.extra.speedKmH.toFixed(2)} km/h (${data.extra.direction})`;
+      }
+
+      const text = `🚨 <b>FIRE DETECTION ALERT</b>\n` +
+                   `━━━━━━━━━━━━━━━━━━\n` +
+                   `📅 <b>Detected at:</b> ${getNowString()}\n` +
+                   `🛰 <b>Sensor:</b> FireVision-Sat 1\n` +
+                   `📍 <b>Location:</b> <code>${data.coords}</code>\n` +
+                   `🔥 <b>AI Confidence:</b> ${data.conf}%\n` +
+                   `⚠️ <b>Severity:</b> ${data.severity}${extraInfo}\n` +
+                   `✅ <b>Status:</b> EXPERT VERIFIED\n` +
+                   `━━━━━━━━━━━━━━━━━━\n` +
+                   `<i>Immediate ground dispatch recommended.</i>`;
+
+      const api = `https://api.telegram.org/bot${token}/sendMessage`;
+      try {
+        await fetch(api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: channel, text: text, parse_mode: 'HTML' })
+        });
+      } catch (err) {}
+    }
+
+    function saveToLocalHistory(data) {
+      if (userRole === 'guest') return;
+      const newAlert = {
+        date: getNowString(),
+        title: "Live Detection: Sector " + (Math.floor(Math.random() * 89) + 10),
+        coords: data.coords,
+        conf: data.conf + "%",
+        severity: data.severity,
+        area: data.extra ? data.extra.area1Km2.toFixed(3) + " km²" : "N/A"
+      };
+      const existing = JSON.parse(localStorage.getItem('fire_alerts') || '[]');
+      existing.push(newAlert);
+      localStorage.setItem('fire_alerts', JSON.stringify(existing));
+    }
+
+    const workCanvas = document.createElement('canvas');
+    const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+
+    function computeFireStats(imgEl){
+      const maxW = 360;
+      const w = imgEl.naturalWidth || imgEl.width;
+      const h = imgEl.naturalHeight || imgEl.height;
+      const scale = Math.min(1, maxW / Math.max(w, h));
+      const dw = Math.round(w * scale);
+      const dh = Math.round(h * scale);
+      
+      workCanvas.width = dw;
+      workCanvas.height = dh;
+      workCtx.drawImage(imgEl, 0, 0, dw, dh);
+      const data = workCtx.getImageData(0, 0, dw, dh).data;
+      
+      let count = 0;
+      let sx = 0;
+      let sy = 0;
+
+      for(let y = 0; y < dh; y++){
+        for(let x = 0; x < dw; x++){
+          const i = (y * dw + x) * 4;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          if(r > 165 && g > 65 && r > g && g > b) {
+            count++;
+            sx += x;
+            sy += y;
+          }
+        }
+      }
+
+      return {
+        count,
+        centroid: count > 0 ? { x: sx / count, y: sy / count } : null,
+        scale
+      };
+    }
+
+    function calcDirection(dx, dy){
+      const angle = Math.atan2(-dy, dx) * 57.29; 
+      const dirs = [
+        {n:"East",min:-22,max:22},
+        {n:"North-East",min:22,max:67},
+        {n:"North",min:67,max:112},
+        {n:"North-West",min:112,max:157},
+        {n:"West",min:157,max:180},
+        {n:"West",min:-180,max:-157},
+        {n:"South-West",min:-157,max:-112},
+        {n:"South",min:-112,max:-67},
+        {n:"South-East",min:-67,max:-22}
+      ];
+      for(const d of dirs) if(angle >= d.min && angle < d.max) return d.n;
+      return "N/A";
+    }
+
+    // ===================== EXPLAINABILITY AI & EVAC ROUTE =====================
+    let globalFireGrid = { q1: 0, q2: 0, q3: 0, q4: 0, centerX: 0, centerY: 0 };
+
+    async function localizeThreat(imgEl) {
+      uiOverlayCanvas.width = imgEl.naturalWidth;
+      uiOverlayCanvas.height = imgEl.naturalHeight;
+      const ctx = uiOverlayCanvas.getContext('2d');
+      ctx.clearRect(0, 0, uiOverlayCanvas.width, uiOverlayCanvas.height);
+
+      const tempC = document.createElement('canvas');
+      tempC.width = imgEl.naturalWidth;
+      tempC.height = imgEl.naturalHeight;
+      const tempCtx = tempC.getContext('2d', { willReadFrequently: true });
+      tempCtx.drawImage(imgEl, 0, 0);
+      
+      const imgData = tempCtx.getImageData(0, 0, tempC.width, tempC.height);
+      const data = imgData.data;
+
+      ctx.fillStyle = 'rgba(255, 51, 0, 0.8)'; 
+      const step = 2; 
+
+      globalFireGrid = { q1: 0, q2: 0, q3: 0, q4: 0, centerX: tempC.width / 2, centerY: tempC.height / 2 };
+
+      for(let y = 0; y < tempC.height; y += step) {
+        for(let x = 0; x < tempC.width; x += step) {
+          const i = (y * tempC.width + x) * 4;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          if(r > 165 && g > 65 && r > g && g > b) {
+            ctx.fillRect(x, y, step, step);
+            if (x < globalFireGrid.centerX && y < globalFireGrid.centerY) globalFireGrid.q1++;
+            else if (x >= globalFireGrid.centerX && y < globalFireGrid.centerY) globalFireGrid.q2++;
+            else if (x < globalFireGrid.centerX && y >= globalFireGrid.centerY) globalFireGrid.q3++;
+            else globalFireGrid.q4++;
+          }
+        }
+      }
+    }
+
+    // EVACUATION ROUTE LOGIC
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+      const headlen = 15; 
+      const dx = tox - fromx;
+      const dy = toy - fromy;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.beginPath();
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(tox, toy);
+      ctx.lineTo(
+        tox - headlen * Math.cos(angle - Math.PI / 6),
+        toy - headlen * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(
+        tox - headlen * Math.cos(angle + Math.PI / 6),
+        toy - headlen * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.stroke();
+    }
+
+    btnEvac.onclick = () => {
+      const ctx = uiOverlayCanvas.getContext('2d');
+        
+      let safest = 'q1';
+      let minFires = globalFireGrid.q1;
+      if(globalFireGrid.q2 < minFires) { minFires = globalFireGrid.q2; safest = 'q2'; }
+      if(globalFireGrid.q3 < minFires) { minFires = globalFireGrid.q3; safest = 'q3'; }
+      if(globalFireGrid.q4 < minFires) { minFires = globalFireGrid.q4; safest = 'q4'; }
+
+      let targetX = 0;
+      let targetY = 0;
+      const w = uiOverlayCanvas.width;
+      const h = uiOverlayCanvas.height;
+
+      if(safest === 'q1') { targetX = w * 0.1; targetY = h * 0.1; }
+      if(safest === 'q2') { targetX = w * 0.9; targetY = h * 0.1; }
+      if(safest === 'q3') { targetX = w * 0.1; targetY = h * 0.9; }
+      if(safest === 'q4') { targetX = w * 0.9; targetY = h * 0.9; }
+
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = '#00ff88';
+      ctx.lineWidth = 4;
+        
+      drawArrow(ctx, globalFireGrid.centerX, globalFireGrid.centerY, targetX, targetY);
+      ctx.setLineDash([]);
+        
+      btnEvac.textContent = "ROUTE GENERATED";
+      btnEvac.style.background = "#333";
+      btnEvac.style.color = "#00ff88";
+      btnEvac.disabled = true;
+    };
+
+    btnTogglePixels.onclick = () => {
+      pixelsVisible = !pixelsVisible;
+      uiOverlayCanvas.style.opacity = pixelsVisible ? '1' : '0';
+      btnTogglePixels.textContent = pixelsVisible ? 'HIDE PIXELS' : 'SHOW PIXELS';
+      btnTogglePixels.style.background = pixelsVisible ? '#ff3300' : '#444';
+    };
+
+    btnToggleImage.onclick = async () => {
+      showingImage2 = !showingImage2;
+      btnToggleImage.textContent = showingImage2 ? 'SHOW IMAGE 1' : 'SHOW IMAGE 2';
+      const currentImg = showingImage2 ? imgPreview2 : imgPreview1;
+      uiPreviewImage.src = currentImg.src;
+      
+      btnEvac.textContent = "PLOT EVAC ROUTE";
+      btnEvac.style.background = "#00ff88";
+      btnEvac.style.color = "#000";
+      btnEvac.disabled = false;
+
+      await localizeThreat(currentImg);
+    };
+
+    document.getElementById('btnConfirm').onclick = () => {
+      if(pendingAlertPayload) {
+        if (userRole === 'guest') {
+          alert('DEMO MODE: Threat confirmed locally. Real Telegram broadcast is disabled for public guests.');
+        } else {
+          broadcastToTelegram(pendingAlertPayload);
+          saveToLocalHistory(pendingAlertPayload);
+        }
+        
+        expertControls.style.display = 'none';
+        explainabilityBox.style.display = 'none';
+        alertLabel.className = 'alertLabel alertDanger';
+        alertLabel.textContent = userRole === 'guest' ? 'DEMO OK' : 'TRANSMITTED';
+        mainLabel.textContent = userRole === 'guest' ? "Alert Simulated" : "Alert Sent to Field Units";
+        mainLabel.style.color = "#00ff88";
+        pendingAlertPayload = null;
+      }
+    };
+
+    document.getElementById('btnReject').onclick = () => {
+      expertControls.style.display = 'none';
+      explainabilityBox.style.display = 'none';
+      alertLabel.className = 'alertLabel alertSafe';
+      alertLabel.textContent = 'DISMISSED';
+      mainLabel.textContent = "Marked as False Alarm";
+      mainLabel.style.color = "#888";
+      pendingAlertPayload = null;
+    };
+
+    // ===================== AI TRIGGER =====================
+    let model = null;
+    async function initAI() {
+      try {
+        model = await tmImage.load(MODEL_PATH + "model.json", MODEL_PATH + "metadata.json");
+        document.getElementById('modelStatus').innerHTML = '<span class="dot-status ok"></span>AI ENGINE: ONLINE';
+      } catch (e) { 
+        document.getElementById('modelStatus').innerHTML = '<span class="dot-status" style="background:red;"></span>AI ERROR'; 
+      }
+    }
+
+    document.getElementById('run').onclick = async () => {
+      explainabilityBox.style.display = 'none';
+      expertControls.style.display = 'none';
+      btnEvac.style.display = 'none';
+      mainLabel.style.color = "#fff";
+      
+      pixelsVisible = true;
+      uiOverlayCanvas.style.opacity = '1';
+      btnTogglePixels.textContent = 'HIDE PIXELS';
+      btnTogglePixels.style.background = '#ff3300';
+      showingImage2 = false;
+      btnToggleImage.style.display = 'none';
+      
+      btnEvac.textContent = "PLOT EVAC ROUTE";
+      btnEvac.style.background = "#00ff88";
+      btnEvac.style.color = "#000";
+      btnEvac.disabled = false;
+
+      const f1 = imgInput1.files[0];
+      const f2 = imgInput2.files[0];
+      if(!f1) return;
+      
+      imgPreview1.src = URL.createObjectURL(f1);
+      await new Promise(r => imgPreview1.onload = r);
+      
+      const res = await model.predict(imgPreview1);
+      const isFire = normalizeClassName(res[0].className) === "Wildfire";
+      const conf = Math.round(res[0].probability * 100);
+      const severity = severityFrom(res[0].className, res[0].probability);
+      const coordsStr = coordsEl.textContent;
+
+      if (isFire) {
+        alertLabel.className = 'alertLabel alertwait';
+        alertLabel.style.background = 'rgba(255, 170, 0, 0.2)';
+        alertLabel.style.color = '#ffaa00';
+        alertLabel.textContent = "REVIEW REQ.";
+        mainLabel.textContent = "Threat Detected. Verify.";
+        
+        uiPreviewImage.src = imgPreview1.src;
+        explainabilityBox.style.display = 'block';
+        btnEvac.style.display = 'block';
+        await localizeThreat(imgPreview1);
+
+      } else {
+        alertLabel.className = 'alertLabel alertSafe';
+        alertLabel.textContent = "SAFE";
+        mainLabel.textContent = "Scanning Clear";
+      }
+
+      let dynamicData = null;
+      let gridHtml = makeKV("Detected at", getNowString()) +
+                     makeKV("AI Confidence", conf + "%") +
+                     makeKV("Severity", severity) +
+                     makeKV("Target AOI", coordsStr);
+
+      if(f2 && isFire) {
+        btnToggleImage.style.display = 'block';
+        imgPreview2.src = URL.createObjectURL(f2);
+        await new Promise(r => imgPreview2.onload = r);
+        
+        const s0 = computeFireStats(imgPreview1);
+        const s1 = computeFireStats(imgPreview2);
+        const dt = parseFloat(document.getElementById('dtMinutes').value || 15);
+        const mpp = parseFloat(document.getElementById('mpp').value || 15);
+        
+        if(s0.centroid && s1.centroid) {
+          const dx = s1.centroid.x - s0.centroid.x;
+          const dy = s1.centroid.y - s0.centroid.y;
+          const distPx = Math.sqrt(dx * dx + dy * dy);
+          const speed = ((distPx * mpp) / dt * 60) / 1000; 
+          const dir = calcDirection(dx, dy);
+          const area1 = s1.count * Math.pow(mpp, 2);
+          
+          dynamicData = {
+            area1Km2: area1 / 1000000,
+            area1Ha: area1 / 10000,
+            speedKmH: speed,
+            direction: dir
+          };
+          
+          gridHtml += makeKV("Current Area", dynamicData.area1Km2.toFixed(3) + " km²") +
+                      makeKV("Spread Speed", speed.toFixed(2) + " km/h") +
+                      makeKV("Wind Direction", dir);
+        }
+      }
+
+      metricsGrid.innerHTML = gridHtml;
+
+      if(isFire) {
+        pendingAlertPayload = { coords: coordsStr, conf, severity, extra: dynamicData };
+        expertControls.style.display = 'flex'; 
+      }
+    };
+
+    // ===================== THREE.JS =====================
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 25);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunLight.position.set(10, 5, 10); 
+    scene.add(sunLight);
+
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 3500;
+    const starPos = new Float32Array(starCount * 3);
+    for(let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 250;
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.7 })));
+
+    const earth = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 64, 64), 
+      new THREE.MeshPhongMaterial({ color: 0xcccccc })
+    );
+    scene.add(earth);
+
+    new THREE.TextureLoader().load(EARTH_TEX, (t) => { 
+      t.colorSpace = THREE.SRGBColorSpace; 
+      earth.material.map = t; 
+      earth.material.needsUpdate = true;
+
+      if (t.image) {
+        prepareEarthSampler(t.image);
+      }
+    });
+    
+    earth.add(new THREE.Mesh(
+      new THREE.SphereGeometry(1.03, 64, 64), 
+      new THREE.MeshBasicMaterial({ transparent:true, opacity:0.08, color: 0x88ccff })
+    ));
+
+    const sat = new THREE.Group(); 
+    scene.add(sat);
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load('assets/satellite.glb', (gltf) => {
+      const loadedModel = gltf.scene;
+      loadedModel.scale.set(0.025, 0.025, 0.025); 
+      sat.add(loadedModel);
+    }, undefined, function (error) {});
+
+    const markC = document.createElement('canvas');
+    markC.width = 64;
+    markC.height = 64;
+    const markCtx = markC.getContext('2d');
+    const rg = markCtx.createRadialGradient(32,32,0,32,32,32);
+    rg.addColorStop(0, 'rgba(255,0,0,1)');
+    rg.addColorStop(1, 'rgba(255,0,0,0)');
+    markCtx.fillStyle = rg;
+    markCtx.fillRect(0,0,64,64);
+
+    const fireMarker = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(markC),
+        depthTest: false
+      })
+    );
+    fireMarker.visible = false; 
+    fireMarker.scale.set(0.12, 0.12, 1);
+    earth.add(fireMarker);
+
+    // ===================== INTERACTIVITY =====================
+    const ray = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('#ui') || e.target.closest('.sidebar') || e.target.closest('.zoom-controls')) return;
+
+      const r = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+      mouse.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+      
+      ray.setFromCamera(mouse, camera);
+      const hits = ray.intersectObject(earth);
+
+      if(hits.length) {
+        const hit = hits[0];
+        const n = earth.worldToLocal(hit.point.clone()).normalize();
+        const lat = Math.asin(n.y) * 57.29;
+        const lon = Math.atan2(n.x, n.z) * 57.29;
+
+        // IMPORTANT: only land is clickable; ocean + Antarctica ignored
+        if (!isValidLandTarget(hit.uv, lat)) return;
+
+        fireMarker.position.copy(n.multiplyScalar(1.03));
+        fireMarker.visible = true; 
+        focusEnabled = true;
+        
+        const coordsText = formatLatLonShort(lat, lon);
+        coordsEl.textContent = coordsText;
+        window.selectedAOI = coordsText;
+        currentZoom = 3.2; 
+        
+        fetchLiveFireRisk(lat, lon);
+        
+        // I REMOVED autoLoadSatelliteImage() FROM HERE!
+      }
+    });
+
+    // ===== THE EVENT LISTENER =====
+    btnRandomFeed.addEventListener('click', () => {
+      if (coordsEl.textContent === "WAITING_FOR_UPLINK...") {
+        alert("Please click on the Earth to select a target AOI first.");
+        return;
+      }
+      autoLoadSatelliteImage();
+    });
+
+    document.getElementById('btnZoomIn').onclick = () => {
+      currentZoom = Math.max(MIN_ZOOM, currentZoom - 1);
+      focusEnabled = false;
+    };
+
+    document.getElementById('btnZoomOut').onclick = () => {
+      currentZoom = Math.max(MAX_ZOOM, currentZoom + 1);
+      focusEnabled = false;
+    };
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate); 
+      t += 0.006;
+
+      earth.rotation.y += 0.0012;
+      sat.position.set(Math.cos(t) * 1.4, Math.sin(t * 0.8) * 0.3, Math.sin(t) * 1.4);
+      sat.lookAt(0,0,0);
+
+      if(focusEnabled && fireMarker.visible) {
+        fireMarker.getWorldPosition(focusTarget);
+        const targetPos = focusTarget.clone().normalize().multiplyScalar(currentZoom);
+        camera.position.lerp(targetPos, 0.06);
+        camera.lookAt(focusTarget);
+      } else {
+        const idlePos = new THREE.Vector3(0, 0, currentZoom);
+        camera.position.lerp(idlePos, 0.03); 
+        camera.lookAt(0,0,0);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    initAI(); 
+    animate();
+
+    window.onresize = () => { 
+      camera.aspect = window.innerWidth / window.innerHeight; 
+      camera.updateProjectionMatrix(); 
+      renderer.setSize(window.innerWidth, window.innerHeight); 
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireVision - Access Portal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #07090f; /* Глубокий темный фон */
+            background-image: radial-gradient(circle at center, #131926 0%, #07090f 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Анимация звезд/частиц на фоне (опционально, для красоты) */
+        .stars {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .login-card {
+            background: rgba(18, 24, 38, 0.85);
+            backdrop-filter: blur(15px);
+            padding: 50px 40px;
+            border-radius: 16px;
+            border: 1px solid rgba(69, 162, 158, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(69, 162, 158, 0.1);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            z-index: 1;
+            position: relative;
+        }
+
+        .logo-text {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .logo-text span {
+            color: #66fcf1; /* Неоновый акцент */
+        }
+
+        .subtitle {
+            color: #9ba1a6;
+            font-size: 14px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        /* Кнопка полного доступа */
+        .btn-admin {
+            background: linear-gradient(90deg, #45a29e 0%, #2c7a76 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(69, 162, 158, 0.4);
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(69, 162, 158, 0.6);
+            background: linear-gradient(90deg, #66fcf1 0%, #45a29e 100%);
+            color: #07090f;
+        }
+
+        /* Кнопка гостевого доступа */
+        .btn-guest {
+            background: transparent;
+            color: #c5c6c7;
+            border: 2px solid rgba(197, 198, 199, 0.3);
+        }
+
+        .btn-guest:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            border-color: #66fcf1;
+        }
+
+        .divider {
+            color: #555;
+            font-size: 12px;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+
+    <div class="login-card">
+        <div class="logo-text">Fire<span>Vision</span></div>
+        <p class="subtitle">Global Satellite Monitoring System.<br>Select your authorization level.</p>
+
+        <button class="btn-admin" onclick="setRoleAndRedirect('admin')">
+            🔒 GOVERNMENT & RESCUE LOGIN
+        </button>
+
+        <div class="divider">- or -</div>
+
+        <button class="btn-guest" onclick="setRoleAndRedirect('guest')">
+            🌍 PUBLIC AWARENESS (READ-ONLY)
+        </button>
+    </div>
+
+    <script>
+        // Функция, которая всё решает
+        function setRoleAndRedirect(role) {
+            // 1. Сохраняем роль ('admin' или 'guest') в память
+            localStorage.setItem('firevision_role', role);
+            
+            // 2. Перекидываем на дэшборд
+            // ВАЖНО: убедись, что твой главный файл называется dashboard.html
+            window.location.href = 'dashboard.html'; 
+        }
+    </script>
+</body>
+</html>

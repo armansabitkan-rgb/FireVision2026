@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FireVision - Payload Specs</title>
+  <style>
+    /* ================= CORE STYLES ================= */
+    html, body { 
+      margin: 0; 
+      height: 100%; 
+      overflow: hidden; 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background-color: #000;
+      color: #fff;
+    }
+    
+    #app { 
+      position: fixed; 
+      inset: 0; 
+      z-index: 1; 
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      bottom: 0;
+      width: 260px;
+      background: rgba(10, 10, 15, 0.7);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 242, 254, 0.15);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      z-index: 20;
+      box-sizing: border-box;
+    }
+    
+    .brand {
+      display: flex; 
+      align-items: center; 
+      gap: 12px;
+      font-weight: 900; 
+      font-size: 20px; 
+      letter-spacing: 0.1em; 
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .brand .dot {
+      width: 14px; 
+      height: 14px; 
+      border-radius: 50%;
+      background: #ff3300; 
+      box-shadow: 0 0 15px #ff3300;
+    }
+    
+    .nav-links { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+    }
+    
+    .nav-links a {
+      text-decoration: none; 
+      color: rgba(255, 255, 255, 0.4);
+      padding: 14px 18px; 
+      border-radius: 12px;
+      font-weight: 600; 
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-links a:hover {
+      background: rgba(0, 242, 254, 0.05); 
+      color: #fff;
+    }
+    
+    .nav-links a.active {
+      background: rgba(0, 242, 254, 0.1);
+      color: #00f2fe;
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+    }
+
+    /* ================= MAIN DATA UI ================= */
+    #ui {
+      position: fixed;
+      top: 25px; 
+      right: 25px;
+      width: 500px; 
+      max-width: 90vw;
+      max-height: calc(100vh - 50px);
+      overflow-y: auto;
+      background: rgba(15, 18, 25, 0.85);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+      z-index: 20;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    
+    #ui::-webkit-scrollbar { width: 6px; }
+    #ui::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.2); border-radius: 10px; }
+
+    h1 { font-size: 24px; margin: 0 0 5px 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+    .subtitle { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; }
+    
+    .spec-block { 
+      background: rgba(255, 255, 255, 0.03); 
+      border-radius: 16px; 
+      padding: 20px; 
+      margin: 15px 0;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: 0.3s;
+    }
+
+    .spec-block:hover {
+      border-color: rgba(0, 242, 254, 0.3);
+      background: rgba(0, 242, 254, 0.02);
+    }
+    
+    .spec-block b { 
+      display: flex; 
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px; 
+      font-size: 14px; 
+      color: #00f2fe; 
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .spec-block b::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      background: #00f2fe;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #00f2fe;
+    }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kv {
+      padding: 12px 15px; 
+      border-radius: 12px;
+      background: rgba(0,0,0,0.4); 
+      border: 1px solid rgba(255,255,255,0.03);
+      display: flex; 
+      flex-direction: column; 
+      gap: 5px;
+    }
+    .k { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; font-weight: 800; }
+    .v { font-size: 13px; color: #fff; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+
+    .desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px dashed rgba(255,255,255,0.1);
+    }
+
+    .highlight { color: #ffaa00; font-weight: bold; }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <div class="sidebar">
+    <a href="home.html" class="brand">
+      <div class="dot"></div> FIREVISION
+    </a>
+    <div class="nav-links">
+      <a href="home.html">00. Home</a>
+      <a href="dashboard.html" id="missionControlLink">01. Mission Control</a>
+      <a href="alerts.html" id="alertsLink">02. Alerts Timeline</a>
+      <a href="ai.html">03. AI Intelligence Lab</a>
+      <a href="scenario.html">04. Scenario Lab</a>
+      <a href="replay.html">05. Incident Replay</a>
+      <a href="payload.html">06. Payload Specs</a>
+    </div>
+  </div>
+
+  <div id="ui">
+    <h1>Hardware Architecture</h1>
+    <div class="subtitle">Orbital Payload Specifications</div>
+
+    <div class="spec-block">
+      <b>Orbital Dynamics</b>
+      <div class="grid">
+        <div class="kv"><div class="k">Orbit Type</div><div class="v">Sun-Synchronous LEO</div></div>
+        <div class="kv"><div class="k">Altitude</div><div class="v">824 km</div></div>
+        <div class="kv"><div class="k">Inclination</div><div class="v">98.7°</div></div>
+        <div class="kv"><div class="k">Revisit Time</div><div class="v">12 Hours</div></div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <b>Primary Sensor Array</b>
+      <div class="grid">
+        <div class="kv"><div class="k">Instrument</div><div class="v">Multi-Spectral Imager</div></div>
+        <div class="kv"><div class="k">Thermal Band</div><div class="v">10.5 - 12.5 µm</div></div>
+        <div class="kv"><div class="k">Swath Width</div><div class="v">3,000 km</div></div>
+        <div class="kv"><div class="k">Spatial Res.</div><div class="v">375m (Nadir)</div></div>
+      </div>
+      <div class="desc">
+        Equipped with a highly sensitive Visible Infrared Imaging Radiometer Suite <span class="highlight">(Architecture mapped to Suomi NPP VIIRS & Sentinel-3 SLSTR)</span>. Designed for day/night planetary observation and micro-thermal anomaly detection.
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <b>Edge Computing Unit</b>
+      <div class="grid">
+        <div class="kv"><div class="k">Processor</div><div class="v">Space-grade NPU</div></div>
+        <div class="kv"><div class="k">Model</div><div class="v">TensorFlow Edge</div></div>
+        <div class="kv"><div class="k">Latency</div><div class="v">< 2.4 Seconds</div></div>
+        <div class="kv"><div class="k">Telemetry</div><div class="v">Encrypted S-Band</div></div>
+      </div>
+      <div class="desc">
+        Instead of downlinking raw images, the satellite performs initial pixel-level threat assessment directly in orbit. Only positive anomalies are beamed down to Earth, reducing bandwidth costs by 99%.
+      </div>
+    </div>
+
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ===== ROLE CHECK =====
+    const userRole = localStorage.getItem('firevision_role') || 'guest';
+    if (userRole === 'guest') {
+      document.getElementById('missionControlLink').style.display = 'none';
+      document.getElementById('alertsLink').style.display = 'none';
+    }
+
+    // ===== Canvas / Renderer =====
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    // CAMERA MOVED BACK (from Z=8 to Z=15) to ensure the whole model is always visible
+    camera.position.set(0, 0, 15);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    // ===== Lights =====
+    // Increased intensity slightly because the camera is further back
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4)); 
+    
+    const blueLight = new THREE.DirectionalLight(0x00f2fe, 2.5);
+    blueLight.position.set(8, 5, 8);
+    scene.add(blueLight);
+
+    const orangeLight = new THREE.DirectionalLight(0xff3300, 2);
+    orangeLight.position.set(-8, -5, -8);
+    scene.add(orangeLight);
+
+    // ===== Starfield =====
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const starPos = new Float32Array(starCount * 3);
+    for(let i=0; i<starCount*3; i++) {
+        starPos[i] = (Math.random() - 0.5) * 100;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.5 }));
+    scene.add(stars);
+
+    // ===== Satellite Model =====
+    const satGroup = new THREE.Group();
+    // Shifted slightly further left to compensate for the zoomed-out camera
+    satGroup.position.x = -3.5;
+    scene.add(satGroup);
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load('assets/satellite.glb', (gltf) => {
+        const loadedModel = gltf.scene;
+        loadedModel.scale.set(0.2, 0.2, 0.2); 
+        
+        loadedModel.rotation.z = 0.3;
+        loadedModel.rotation.x = 0.2;
+        
+        satGroup.add(loadedModel);
+    }, undefined, function (error) {
+        console.error('Error loading the satellite model:', error);
+    });
+
+    // ===== Animation Loop =====
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetX = 0;
+    let targetY = 0;
+
+    const windowHalfX = window.innerWidth / 2;
+    const windowHalfY = window.innerHeight / 2;
+
+    document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX - windowHalfX) * 0.001;
+        mouseY = (event.clientY - windowHalfY) * 0.001;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate); 
+
+      satGroup.rotation.y += 0.002;
+      stars.rotation.y += 0.0005;
+
+      targetX = mouseX * 0.5;
+      targetY = mouseY * 0.5;
+      
+      satGroup.rotation.x += 0.05 * (targetY - satGroup.rotation.x);
+      satGroup.rotation.z += 0.05 * (targetX - satGroup.rotation.z);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.onresize = () => { 
+      camera.aspect = window.innerWidth / window.innerHeight; 
+      camera.updateProjectionMatrix(); 
+      renderer.setSize(window.innerWidth, window.innerHeight); 
+    };
+  </script>
+</body>
+</html>

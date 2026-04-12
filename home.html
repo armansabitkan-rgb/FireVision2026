@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FireVision — Satellite POV</title>
+  <style>
+    :root{
+      --bg:#060712;
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.78);
+      --glass:rgba(255,255,255,.07);
+      --border:rgba(255,255,255,.14);
+      --accent:#ff7a2a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Arial;overflow:hidden}
+    body{
+      background: radial-gradient(1200px 900px at 15% 20%, rgba(155,92,255,.15), transparent 60%),
+                  radial-gradient(900px 700px at 80% 25%, rgba(59,230,255,.10), transparent 62%),
+                  radial-gradient(1100px 850px at 55% 90%, rgba(255,122,42,.10), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    #bg3d{ position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; }
+
+    .wrap{
+      position:relative; z-index:5; height:100%;
+      padding:clamp(18px, 4vw, 54px);
+      display:grid; grid-template-columns: 1.15fr 0.85fr;
+      gap:28px; align-items:center;
+      pointer-events:none;
+    }
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr; height:auto; padding:22px 18px 110px;}
+      body{overflow:auto}
+    }
+
+    .brand{
+      position:fixed; left: clamp(18px, 4vw, 54px); top: 18px; z-index:6;
+      display:flex; gap:10px; align-items:center; padding:10px 12px;
+      border-radius: 14px; border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18); backdrop-filter: blur(10px);
+      color: rgba(255,255,255,.9); pointer-events:none;
+    }
+    .brand .logoDot{
+      width:10px;height:10px;border-radius:50%;
+      background: rgba(255,122,42,.95); box-shadow: 0 0 18px rgba(255,122,42,.35);
+    }
+    .brand .t1{font-weight:800; letter-spacing:.04em}
+    .brand .t2{color: rgba(255,255,255,.65); font-size:12px}
+
+    .headline{
+      margin:0; font-weight: 900; letter-spacing:-0.03em; line-height:0.96;
+      text-shadow: 0 0 26px rgba(255,255,255,.06);
+      font-size: clamp(34px, 5.2vw, 76px);
+    }
+    .tagline{
+      margin-top:14px; max-width: 760px; color: var(--muted);
+      font-size: clamp(14px, 1.55vw, 18px); line-height:1.55;
+    }
+
+    .card{
+      background: var(--glass); border: 1px solid var(--border);
+      border-radius: 18px; padding: 18px 18px 16px;
+      box-shadow: 0 20px 70px rgba(0,0,0,.35);
+      backdrop-filter: blur(12px); pointer-events:auto;
+    }
+    .card h2{margin:0 0 12px 0;font-size:18px;letter-spacing:.02em;color: rgba(255,255,255,.92);}
+    .targets{list-style:none;padding:0;margin:0;display:grid;gap:10px;}
+    .targets li{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.88); font-size:14px; line-height:1.35;
+    }
+    .dot2{width:10px;height:10px;border-radius:50%;margin-top:6px;background: #ff2200;box-shadow: 0 0 18px #ff2200;flex:0 0 auto;}
+
+    .btnRow{margin-top:16px;display:flex;gap:12px;align-items:center;}
+    .btn, .btn:visited{
+      flex:1;display:inline-flex;align-items:center;justify-content:center;
+      padding: 14px 16px;border-radius: 16px; border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(255,122,42,.22), rgba(255,122,42,.10));
+      color:#fff;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+      text-decoration:none; user-select:none; transition: transform .15s ease, background .2s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); background: linear-gradient(180deg, rgba(255,122,42,.28), rgba(255,122,42,.12)); }
+
+    .btnGhost{
+      flex:1; display:inline-flex; align-items:center; justify-content:center;
+      padding:14px 16px; border-radius:16px; border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06); color: rgba(255,255,255,.88);
+      font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+      text-decoration:none; user-select:none; transition: transform .15s ease, background .2s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); background: rgba(255,255,255,.12); }
+
+    .hintBox{
+      position:fixed; left: clamp(18px, 4vw, 54px); bottom: 16px; z-index:6;
+      padding:10px 12px; border-radius:14px; border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22); backdrop-filter: blur(10px);
+      color: rgba(255,255,255,.78); font-size:12px; pointer-events:none;
+      max-width:min(680px, 92vw); line-height:1.35;
+    }
+    .kbd{font-family:ui-monospace,Consolas,monospace;color:rgba(255,255,255,.92)}
+  </style>
+</head>
+
+<body>
+  <canvas id="bg3d"></canvas>
+
+  <div class="brand">
+    <span class="logoDot"></span>
+    <div>
+      <div class="t1">FIREVISION</div>
+      <div class="t2">Satellite POV • Global Monitoring</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div>
+      <h1 class="headline">FireVision Satellite Project</h1>
+      <div class="tagline">
+        Global satellite monitoring: anomaly detection, AI verification, and simulation laboratory.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Global Status</h2>
+      <ul class="targets">
+        <li><span class="dot2"></span>Continuous planetary thermal scanning online.</li>
+        <li><span class="dot2"></span>Data uplink integrated with <b>Suomi NPP (VIIRS)</b> and <b>Sentinel-3</b>.</li>
+        <li><span class="dot2"></span>AI successfully filtering oceans and false solar reflections.</li>
+      </ul>
+
+      <div class="btnRow">
+        <a class="btn" href="dashboard.html" id="missionControlBtn">Enter Mission Control</a>
+        <a class="btnGhost" href="payload.html">View Payload Tech</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="hintBox">
+    Controls: <span class="kbd">LMB + drag</span> to rotate globe. 
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ===== ROLE CHECK =====
+    const userRole = localStorage.getItem('firevision_role') || 'guest';
+    if (userRole === 'guest') {
+      const mcBtn = document.getElementById('missionControlBtn');
+      mcBtn.style.opacity = '0.5';
+      mcBtn.style.pointerEvents = 'none';
+      mcBtn.textContent = 'ACCESS RESTRICTED';
+    }
+
+    // ===== Canvas / Renderer =====
+    const canvas = document.getElementById('bg3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+
+    // ===== Camera =====
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 500);
+    scene.add(camera);
+
+    const earthRadius = 2.0;
+    const camDist = 6.2;
+    let yaw = 0.6, pitch = 0.25;
+    let targetYaw = yaw, targetPitch = pitch;
+
+    // ===== Lights =====
+    scene.add(new THREE.AmbientLight(0xffffff, 0.50)); 
+    const key = new THREE.DirectionalLight(0xffffff, 1.5);
+    key.position.set(-8, 4, 6);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x88ccff, 0.5);
+    rim.position.set(6, -2, -6);
+    scene.add(rim);
+
+    // ===== Sun & Stars =====
+    function makeSunTex(){
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512; const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(256,256,0,256,256,260);
+      g.addColorStop(0.0, 'rgba(255,245,210,0.92)'); g.addColorStop(0.2, 'rgba(255,190,120,0.50)');
+      g.addColorStop(0.5, 'rgba(255,140,70,0.18)'); g.addColorStop(1.0, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0,0,512,512);
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; return tex;
+    }
+    const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeSunTex(), transparent:true, opacity:0.56, depthWrite:false, blending: THREE.AdditiveBlending }));
+    sunSprite.position.set(-10, 6, -18); sunSprite.scale.set(22, 22, 1);
+    scene.add(sunSprite);
+
+    const starCount = 3200;
+    const starGeom = new THREE.BufferGeometry();
+    const starPos = new Float32Array(starCount * 3);
+    for (let i=0; i<starCount; i++){
+      const r = 170 * Math.random() + 30;
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos(2*Math.random()-1);
+      starPos[i*3+0] = r*Math.sin(phi)*Math.cos(theta); starPos[i*3+1] = r*Math.sin(phi)*Math.sin(theta); starPos[i*3+2] = r*Math.cos(phi);
+    }
+    starGeom.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(starGeom, new THREE.PointsMaterial({ size:0.085, transparent:true, opacity:0.88 }));
+    scene.add(stars);
+
+    // ===== Earth =====
+    const earth = new THREE.Mesh(
+      new THREE.SphereGeometry(earthRadius, 64, 64),
+      new THREE.MeshPhongMaterial({ color: 0xdddddd }) 
+    );
+    scene.add(earth);
+
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(earthRadius*1.03, 64, 64),
+      new THREE.MeshBasicMaterial({ transparent:true, opacity:0.08, color: 0x88ccff })
+    );
+    earth.add(atmosphere);
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('assets/earth.jpg', (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        earth.material.map = tex;
+        earth.material.needsUpdate = true;
+    });
+
+    // ==========================================
+    // EXTERNAL SATELLITE MODEL (GLTF)
+    // ==========================================
+    const sat = new THREE.Group();
+    camera.add(sat); 
+
+    const gltfLoader = new GLTFLoader();
+    
+    gltfLoader.load('assets/satellite.glb', (gltf) => {
+        const loadedModel = gltf.scene;
+        loadedModel.scale.set(0.05, 0.05, 0.05); 
+        loadedModel.position.set(-1.25, -0.85, -2.35);
+        loadedModel.rotation.y = 0.45;
+        loadedModel.rotation.x = 0.10;
+        sat.add(loadedModel);
+    }, undefined, function (error) {
+        console.error('Error loading the satellite model:', error);
+    });
+
+    // ===== Controls =====
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+    const clamp = (v,a,b)=>Math.max(a, Math.min(b,v));
+    canvas.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener('pointerup', () => { dragging = false; });
+    canvas.addEventListener('pointermove', (e) => {
+      if(!dragging) return;
+      const dx = e.clientX - lastX; const dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      targetYaw -= dx * 0.006; targetPitch -= dy * 0.006;
+      targetPitch = clamp(targetPitch, -1.05, 1.05);
+    });
+
+    // ===== Animation =====
+    let t = 0;
+    function animate(){
+      requestAnimationFrame(animate);
+      t += 0.01;
+      yaw += (targetYaw - yaw) * 0.08; pitch += (targetPitch - pitch) * 0.08;
+      const cx = camDist * Math.cos(pitch) * Math.sin(yaw);
+      const cy = camDist * Math.sin(pitch);
+      const cz = camDist * Math.cos(pitch) * Math.cos(yaw);
+      camera.position.set(cx, cy, cz); camera.lookAt(0,0,0);
+      earth.rotation.y += 0.0009; stars.rotation.y += 0.00025;
+      sunSprite.material.opacity = 0.52 + Math.sin(t*0.7)*0.04;
+      
+      // Gentle floating animation for the satellite
+      sat.rotation.z = Math.sin(t*0.9) * 0.03;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  </script>
+</body>
+</html>
