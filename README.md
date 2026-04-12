@@ -4,8 +4,6 @@
 ![AI](https://img.shields.io/badge/AI-TensorFlow.js-orange?style=for-the-badge)
 ![3D](https://img.shields.io/badge/3D-Three.js-blue?style=for-the-badge)
 
-🔗 **Live Demo:** [Открыть FireVision](https://armansabitkan-rgb.github.io/FireVision2026/)
-
 **FireVision** — это интеллектуальная система спутникового мониторинга для раннего обнаружения лесных пожаров и прогнозирования их распространения. Проект объединяет ИИ-анализ снимков и интерактивную 3D-визуализацию.
 
 🌐 **Live Demo (Рабочий прототип):** [FireVision Web App](https://armansabitkan-rgb.github.io/FireVision2026/)
