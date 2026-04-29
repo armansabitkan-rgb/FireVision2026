@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FireVision">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>FireVision — Satellite POV</title>
   <style>
     :root{
@@ -136,6 +142,7 @@
       <div class="btnRow">
         <a class="btn" href="dashboard.html" id="missionControlBtn">Enter Mission Control</a>
         <a class="btnGhost" href="payload.html">View Payload Tech</a>
+        <a class="btnGhost" href="aero.html" style="color: #ff7a2a; border-color: rgba(255,122,42,.4);">🚁 Aero Control</a>
       </div>
     </div>
   </div>
@@ -158,13 +165,8 @@
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     // ===== ROLE CHECK =====
+    // Guests are allowed to enter Mission Control in Demo Mode
     const userRole = localStorage.getItem('firevision_role') || 'guest';
-    if (userRole === 'guest') {
-      const mcBtn = document.getElementById('missionControlBtn');
-      mcBtn.style.opacity = '0.5';
-      mcBtn.style.pointerEvents = 'none';
-      mcBtn.textContent = 'ACCESS RESTRICTED';
-    }
 
     // ===== Canvas / Renderer =====
     const canvas = document.getElementById('bg3d');
@@ -297,6 +299,14 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
     });
+  </script>
+  <script>
+    // PWA: Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(r => console.log('[PWA] SW registered'))
+        .catch(e => console.warn('[PWA] SW failed:', e));
+    }
   </script>
 </body>
 </html>

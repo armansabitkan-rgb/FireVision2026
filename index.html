@@ -1,146 +1,522 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FireVision - Access Portal</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FireVision">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>FireVision — Secure Access</title>
+  <style>
+    /* ================= CORE STYLES ================= */
+    html, body { 
+      margin: 0; 
+      height: 100%; 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background-color: #0b0c10;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
 
-        body {
-            background-color: #07090f; /* Глубокий темный фон */
-            background-image: radial-gradient(circle at center, #131926 0%, #07090f 100%);
-            color: #ffffff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+    /* Cool cyber-grid background */
+    body::before {
+      content: ""; 
+      position: absolute; 
+      inset: 0; 
+      z-index: -1;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(69, 162, 158, 0.15), transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
 
-        /* Анимация звезд/частиц на фоне (опционально, для красоты) */
-        .stars {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.3;
-            z-index: 0;
-        }
+    /* ================= LOGIN PANEL ================= */
+    .login-container {
+      background: rgba(11, 12, 16, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(69, 162, 158, 0.3);
+      border-radius: 20px;
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(69, 162, 158, 0.1);
+      animation: slideUp 0.6s ease-out;
+    }
 
-        .login-card {
-            background: rgba(18, 24, 38, 0.85);
-            backdrop-filter: blur(15px);
-            padding: 50px 40px;
-            border-radius: 16px;
-            border: 1px solid rgba(69, 162, 158, 0.3);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(69, 162, 158, 0.1);
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            z-index: 1;
-            position: relative;
-        }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        .logo-text {
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
+    .brand {
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: 15px;
+      font-weight: 900; 
+      font-size: 28px; 
+      letter-spacing: 0.15em; 
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    
+    .brand .dot {
+      width: 18px; 
+      height: 18px; 
+      border-radius: 50%;
+      background: #ff3300; 
+      box-shadow: 0 0 20px #ff3300;
+      animation: pulse 2s infinite;
+    }
 
-        .logo-text span {
-            color: #66fcf1; /* Неоновый акцент */
-        }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 10px rgba(255, 51, 0, 0.5); }
+      50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(255, 51, 0, 0.9); }
+      100% { transform: scale(0.95); box-shadow: 0 0 10px rgba(255, 51, 0, 0.5); }
+    }
 
-        .subtitle {
-            color: #9ba1a6;
-            font-size: 14px;
-            margin-bottom: 40px;
-            line-height: 1.5;
-        }
+    .subtitle {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
 
-        button {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-        }
+    /* ================= BUTTONS ================= */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
 
-        /* Кнопка полного доступа */
-        .btn-admin {
-            background: linear-gradient(90deg, #45a29e 0%, #2c7a76 100%);
-            color: #ffffff;
-            box-shadow: 0 4px 15px rgba(69, 162, 158, 0.4);
-        }
+    .btn-admin {
+      background: linear-gradient(135deg, #45a29e 0%, #66fcf1 100%);
+      color: #0b0c10;
+      border: none;
+      box-shadow: 0 8px 25px rgba(69, 162, 158, 0.3);
+    }
+    .btn-admin:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(69, 162, 158, 0.5);
+    }
 
-        .btn-admin:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(69, 162, 158, 0.6);
-            background: linear-gradient(90deg, #66fcf1 0%, #45a29e 100%);
-            color: #07090f;
-        }
+    .btn-guest {
+      background: transparent;
+      color: #66fcf1;
+      border: 1px solid rgba(102, 252, 241, 0.4);
+    }
+    .btn-guest:hover {
+      background: rgba(69, 162, 158, 0.1);
+      border-color: #66fcf1;
+      transform: translateY(-2px);
+    }
 
-        /* Кнопка гостевого доступа */
-        .btn-guest {
-            background: transparent;
-            color: #c5c6c7;
-            border: 2px solid rgba(197, 198, 199, 0.3);
-        }
+    /* ================= DIVIDER ================= */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0 15px;
+      color: rgba(255,255,255,0.25);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(102,252,241,0.2), transparent);
+    }
 
-        .btn-guest:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #ffffff;
-            border-color: #66fcf1;
-        }
+    /* ================= INSTALL BUTTON ================= */
+    .btn-install {
+      background: linear-gradient(135deg, #ff6b35 0%, #ff3300 50%, #ff6b35 100%);
+      background-size: 200% 200%;
+      animation: shimmer 3s ease-in-out infinite;
+      color: #fff;
+      border: none;
+      box-shadow: 0 8px 25px rgba(255, 51, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-install::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+      animation: shine 4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(25deg); }
+      30%, 100% { transform: translateX(100%) rotate(25deg); }
+    }
+    .btn-install:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(255, 51, 0, 0.5);
+    }
 
-        .divider {
-            color: #555;
-            font-size: 12px;
-            margin: 20px 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-    </style>
+    /* ================= INSTALL MODAL ================= */
+    .install-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.3s ease;
+    }
+    .install-modal-overlay.show { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .install-modal {
+      background: rgba(15, 16, 22, 0.95);
+      border: 1px solid rgba(69, 162, 158, 0.3);
+      border-radius: 20px;
+      padding: 35px 30px;
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+      animation: slideUp 0.4s ease-out;
+    }
+    .install-modal h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #fff;
+    }
+    .install-modal .modal-sub {
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      margin-bottom: 25px;
+    }
+    .install-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      text-align: left;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .install-step .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #45a29e, #66fcf1);
+      color: #0b0c10;
+      font-weight: 900;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .install-step .step-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      line-height: 1.5;
+    }
+    .install-step .step-text strong {
+      color: #66fcf1;
+    }
+    .modal-close-btn {
+      margin-top: 10px;
+      padding: 12px 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(102, 252, 241, 0.3);
+      background: transparent;
+      color: #66fcf1;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-close-btn:hover {
+      background: rgba(69, 162, 158, 0.1);
+      border-color: #66fcf1;
+    }
+
+    .system-status {
+      margin-top: 30px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #4ade80;
+    }
+
+    /* ================= PWA INSTALL BANNER ================= */
+    .pwa-install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(11, 12, 16, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(69, 162, 158, 0.3);
+      padding: 16px 24px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 9999;
+      animation: slideUpBanner 0.4s ease-out;
+    }
+    @keyframes slideUpBanner {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .pwa-install-banner .pwa-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .pwa-install-banner .pwa-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .pwa-install-banner .pwa-text h4 {
+      margin: 0;
+      font-size: 14px;
+      color: #fff;
+    }
+    .pwa-install-banner .pwa-text p {
+      margin: 2px 0 0 0;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .pwa-install-btn {
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #45a29e 0%, #66fcf1 100%);
+      color: #0b0c10;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .pwa-install-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(69, 162, 158, 0.4);
+    }
+    .pwa-dismiss-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+  </style>
 </head>
 <body>
-    <div class="stars"></div>
 
-    <div class="login-card">
-        <div class="logo-text">Fire<span>Vision</span></div>
-        <p class="subtitle">Global Satellite Monitoring System.<br>Select your authorization level.</p>
-
-        <button class="btn-admin" onclick="setRoleAndRedirect('admin')">
-            🔒 GOVERNMENT & RESCUE LOGIN
-        </button>
-
-        <div class="divider">- or -</div>
-
-        <button class="btn-guest" onclick="setRoleAndRedirect('guest')">
-            🌍 PUBLIC AWARENESS (READ-ONLY)
-        </button>
+  <div class="login-container">
+    <div class="brand">
+      <div class="dot"></div> FIREVISION
     </div>
+    <div class="subtitle">Autonomous Orbital Monitoring</div>
 
-    <script>
-        // Функция, которая всё решает
-        function setRoleAndRedirect(role) {
-            // 1. Сохраняем роль ('admin' или 'guest') в память
-            localStorage.setItem('firevision_role', role);
-            
-            // 2. Перекидываем на дэшборд
-            // ВАЖНО: убедись, что твой главный файл называется dashboard.html
-            window.location.href = 'dashboard.html'; 
-        }
-    </script>
+    <button class="btn btn-admin" onclick="setRoleAndRedirect('admin')">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      Expert Login
+    </button>
+
+    <button class="btn btn-guest" onclick="setRoleAndRedirect('guest')">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+      Enter Demo Mode
+    </button>
+
+    <div class="divider">or</div>
+
+    <button class="btn btn-install" id="installAppBtn" onclick="handleInstallClick()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+      Install App
+    </button>
+
+    <div class="system-status">
+      SYSTEM STATUS: SECURE CONNECTION ESTABLISHED
+    </div>
+  </div>
+
+  <!-- Install Instructions Modal -->
+  <div class="install-modal-overlay" id="installModal">
+    <div class="install-modal">
+      <h3>📲 Install FireVision</h3>
+      <p class="modal-sub">Follow these steps to install the app on your device</p>
+
+      <div id="chromeSteps">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Click the <strong>install icon ⊕</strong> in the address bar (right side)</div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Or click <strong>⋮ Menu → Install FireVision</strong></div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-text">Click <strong>Install</strong> in the popup — done! The app will open in its own window</div>
+        </div>
+      </div>
+
+      <div id="edgeSteps" style="display:none;">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Click the <strong>⊕ App available</strong> icon in the address bar</div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Or click <strong>⋯ Menu → Apps → Install FireVision</strong></div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-text">Click <strong>Install</strong> — the app launches in its own window with full-screen experience</div>
+        </div>
+      </div>
+
+      <button class="modal-close-btn" onclick="document.getElementById('installModal').classList.remove('show')">GOT IT</button>
+    </div>
+  </div>
+
+  <!-- PWA Install Banner -->
+  <div class="pwa-install-banner" id="pwaInstallBanner">
+    <div class="pwa-info">
+      <img src="icons/icon-192.png" alt="FireVision" class="pwa-icon">
+      <div class="pwa-text">
+        <h4>Install FireVision</h4>
+        <p>Get the full app experience — works offline</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="pwa-install-btn" id="pwaInstallBtn">INSTALL</button>
+      <button class="pwa-dismiss-btn" id="pwaDismissBtn">&times;</button>
+    </div>
+  </div>
+
+  <script>
+    // This is the function that fixes your redirect bug!
+    function setRoleAndRedirect(role) {
+      // 1. Save the role (so the dashboard knows if it should disable Telegram)
+      localStorage.setItem('firevision_role', role);
+      
+      // 2. Redirect straight to the 3D Home screen instead of the Dashboard
+      window.location.href = 'home.html';
+    }
+
+    // ================= PWA: Service Worker Registration =================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('[PWA] Service Worker registered, scope:', reg.scope))
+          .catch((err) => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+
+    // ================= PWA: Install Prompt =================
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwaInstallBanner');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const dismissBtn = document.getElementById('pwaDismissBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show the custom install banner
+      if (!localStorage.getItem('pwa_install_dismissed')) {
+        installBanner.style.display = 'flex';
+      }
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('[PWA] Install outcome:', outcome);
+      deferredPrompt = null;
+      installBanner.style.display = 'none';
+    });
+
+    dismissBtn.addEventListener('click', () => {
+      installBanner.style.display = 'none';
+      localStorage.setItem('pwa_install_dismissed', 'true');
+    });
+
+    // Hide banner if app is already installed
+    window.addEventListener('appinstalled', () => {
+      installBanner.style.display = 'none';
+      // Also hide the inline install button
+      document.getElementById('installAppBtn').style.display = 'none';
+      console.log('[PWA] App installed successfully!');
+    });
+
+    // ================= Install App Button Handler =================
+    function handleInstallClick() {
+      // If the browser deferred prompt is available, use it directly
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(({ outcome }) => {
+          console.log('[PWA] Install outcome:', outcome);
+          deferredPrompt = null;
+        });
+        return;
+      }
+
+      // Otherwise show manual install instructions
+      const modal = document.getElementById('installModal');
+      const isEdge = navigator.userAgent.includes('Edg/');
+      document.getElementById('chromeSteps').style.display = isEdge ? 'none' : 'block';
+      document.getElementById('edgeSteps').style.display = isEdge ? 'block' : 'none';
+      modal.classList.add('show');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('installModal').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('show');
+    });
+
+    // Hide install button if running as standalone (already installed)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      document.getElementById('installAppBtn').style.display = 'none';
+    }
+  </script>
 </body>
 </html>
